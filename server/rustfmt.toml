@@ -1,0 +1,10 @@
+use_field_init_shorthand = true
+use_try_shorthand = true
+
+# Nightly only
+unstable_features = true
+
+imports_granularity = "Module"
+normalize_comments = true
+reorder_impl_items = true
+group_imports = "StdExternalCrate"
