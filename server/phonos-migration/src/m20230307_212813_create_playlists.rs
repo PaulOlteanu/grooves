@@ -20,7 +20,12 @@ impl MigrationTrait for Migration {
                     )
                     .col(ColumnDef::new(Playlist::Name).string().not_null())
                     .col(ColumnDef::new(Playlist::OwnerId).integer().not_null())
-                    .col(ColumnDef::new(Playlist::Elements).json_binary())
+                    .col(
+                        ColumnDef::new(Playlist::Elements)
+                            .json_binary()
+                            .not_null()
+                            .default("[]"),
+                    )
                     .to_owned(),
             )
             .await?;

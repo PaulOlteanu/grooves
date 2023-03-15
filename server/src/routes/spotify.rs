@@ -5,6 +5,7 @@ use axum::response::IntoResponse;
 use axum::routing::get;
 use axum::{Extension, Json, Router};
 use axum_macros::debug_handler;
+use phonos_entity::playlist::Song;
 use phonos_entity::user;
 use rspotify::model::{AlbumId, SearchResult, SearchType, SimplifiedAlbum};
 use rspotify::prelude::{BaseClient, Id};
@@ -14,7 +15,6 @@ use serde::Serialize;
 use serde_json::json;
 
 use crate::error::{PhonosError, PhonosResult};
-use crate::models::playlist::Song;
 use crate::util::spotify;
 use crate::{middleware, AppState};
 

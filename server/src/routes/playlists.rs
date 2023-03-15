@@ -4,14 +4,13 @@ use axum::response::IntoResponse;
 use axum::routing::get;
 use axum::{Extension, Json, Router};
 use axum_macros::debug_handler;
-use phonos_entity::playlist::{self, Entity as Playlist};
+use phonos_entity::playlist::{self, Entity as Playlist, PlaylistElement};
 use phonos_entity::user;
 use sea_orm::{ActiveModelBehavior, ActiveModelTrait, ColumnTrait, EntityTrait, QueryFilter, Set};
 use serde::Deserialize;
 use serde_json::json;
 
 use crate::error::{PhonosError, PhonosResult};
-use crate::models::playlist::PlaylistElement;
 use crate::{middleware, AppState};
 
 pub fn router(state: AppState) -> Router<AppState> {
@@ -55,7 +54,7 @@ async fn create_playlist(
 ) -> PhonosResult<impl IntoResponse> {
     let mut playlist = playlist::ActiveModel::new();
     playlist.name = Set(payload.name);
-    playlist.elements = Set(Some(json!(payload.elements)));
+    playlist.elements = Set(json!(payload.elements));
     playlist.owner_id = Set(current_user.id);
 
     let result = playlist.insert(&state.db).await?;
@@ -90,7 +89,7 @@ async fn update_playlist(
         } else {
             let mut active_playlist: playlist::ActiveModel = user_playlist.into();
             active_playlist.name = Set(payload.name);
-            active_playlist.elements = Set(Some(json!(payload.elements)));
+            active_playlist.elements = Set(json!(payload.elements));
             let playlist = active_playlist.update(&state.db).await?;
 
             Ok(Json(playlist))

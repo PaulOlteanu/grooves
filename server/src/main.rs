@@ -7,7 +7,6 @@ use tokio::sync::{Mutex, RwLock};
 mod error;
 mod extractors;
 mod middleware;
-mod models;
 mod player_connection;
 mod routes;
 mod util;

@@ -36,7 +36,7 @@ pub mod commands;
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 struct PlaybackState {
-    device_id: String,
+    device_id: Option<String>,
     playlist: playlist::Model,
 
     /// A list of indices into playlist elements
@@ -50,7 +50,17 @@ struct PlaybackState {
     /// The index of the current song in the element
     current_song: usize,
     current_song_id: Option<TrackId<'static>>,
-    current_song_position: Duration,
+    current_song_position: Option<Duration>,
+}
+
+impl PlaybackState {
+    // pub fn new(playlist: playlist::Model,) -> Self {
+    //     Self {
+    //         device_id: None,
+    //         playlist,
+    //         order: generate_order(playlist.elements.len, options)
+    //     }
+    // }
 }
 
 // impl PlaybackState {
