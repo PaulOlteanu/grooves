@@ -9,6 +9,7 @@ import Root from "./routes/root";
 import { QueryClient, QueryClientProvider } from "react-query";
 import PlaylistsPage from "./routes/playlists/playlistsPage";
 import PlaylistPage from "./routes/playlists/playlistPage";
+import Player from "./routes/player";
 
 const router = createBrowserRouter([
   {
@@ -25,6 +26,10 @@ const router = createBrowserRouter([
             element: <PlaylistPage />,
           },
         ],
+      },
+      {
+        path: "player",
+        element: <Player />,
       },
     ],
   },

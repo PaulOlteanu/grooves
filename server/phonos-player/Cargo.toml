@@ -5,8 +5,9 @@ edition = "2021"
 
 [dependencies]
 itertools = "0.10.3"
+phonos-entity = { path = "../phonos-entity" }
 rand = "0.8.5"
 serde = { version = "1.0.0", features = ["derive"] }
 serde_json = "1.0.0"
-rspotify = {path = "../../../rspotify"}
+rspotify = { path = "../../../rspotify" }
 tokio = { version = "1.13.0", features = ["rt-multi-thread", "macros"] }

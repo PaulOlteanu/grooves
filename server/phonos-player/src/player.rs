@@ -1,15 +1,14 @@
-// use std::sync::mpsc::{channel, Receiver, Sender};
-// use std::time::{self, Duration, Instant};
+use std::time::Duration;
 
-// use rand::seq::SliceRandom;
-// use rand::thread_rng;
-// use rspotify::clients::OAuthClient;
-// use rspotify::model::{Offset, PlayableItem, RepeatState, TrackId};
-// use rspotify::AuthCodeSpotify;
-// use serde::{Deserialize, Serialize};
-// use tokio::task;
+use phonos_entity::playlist;
+use rspotify::model::TrackId;
+use rspotify::AuthCodeSpotify;
+use serde::{Deserialize, Serialize};
+use tokio::sync::mpsc::{Receiver, Sender};
 
-// pub mod command;
+use self::commands::Command;
+
+pub mod commands;
 // pub mod player_builder;
 // pub mod player_options;
 
@@ -35,21 +34,24 @@
 //     EndPlayback,
 // }
 
-// #[derive(Clone, Debug, Serialize, Deserialize)]
-// struct PlaybackState {
-//     /// A list of indices into playlist elements
-//     /// if order = [2, 0, 1], that corresponds to playing the 2nd then 0th then 1st elements in the playlist
-//     order: Vec<usize>,
+#[derive(Clone, Debug, Serialize, Deserialize)]
+struct PlaybackState {
+    device_id: String,
+    playlist: playlist::Model,
 
-//     /// An index into order
-//     /// if order = [2, 0, 1] and current = 1, we're currently playing the 0th element in the playlist
-//     current_element: usize,
+    /// A list of indices into playlist elements
+    /// if order = [2, 0, 1], that corresponds to playing the 2nd then 0th then 1st elements in the playlist
+    order: Vec<usize>,
 
-//     /// The index of the current song in the element
-//     current_song: usize,
-//     current_song_id: Option<TrackId<'static>>,
-//     current_song_position: Duration,
-// }
+    /// An index into order
+    /// if order = [2, 0, 1] and current = 1, we're currently playing the 0th element in the playlist
+    current_element: usize,
+
+    /// The index of the current song in the element
+    current_song: usize,
+    current_song_id: Option<TrackId<'static>>,
+    current_song_position: Duration,
+}
 
 // impl PlaybackState {
 //     pub fn get_current_element_index(&self) -> usize {
@@ -69,13 +71,48 @@
 //     }
 // }
 
-// pub struct Player {
-//     spotify_client: AuthCodeSpotify,
-//     command_receiver: Option<Receiver<PlayerCommand>>,
-//     playlist: Playlist,
-//     device_id: String,
-//     state: Option<PlaybackState>,
-// }
+pub struct Player {
+    spotify_client: AuthCodeSpotify,
+    sender: Sender<Command>,
+    receiver: Receiver<Command>,
+    state: Option<PlaybackState>,
+}
+
+impl Player {
+    pub fn new(
+        spotify_client: AuthCodeSpotify,
+        sender: Sender<Command>,
+        receiver: Receiver<Command>,
+    ) -> Self {
+        Self {
+            spotify_client,
+            sender,
+            receiver,
+            state: None,
+        }
+    }
+
+    pub fn run(mut self) {
+        loop {
+            if let Ok(command) = self.receiver.try_recv() {
+                match command {
+                    Command::Play {
+                        playlist,
+                        element_index,
+                        song_index,
+                    } => {
+                        println!("Beginning playback of: ");
+                        unimplemented!()
+                    }
+                    _ => {
+                        println!("Unimplemented command");
+                        unimplemented!()
+                    }
+                }
+            }
+        }
+    }
+}
 
 // impl Player {
 //     pub fn new(spotify_client: AuthCodeSpotify, playlist: Playlist, device_id: String) -> Self {

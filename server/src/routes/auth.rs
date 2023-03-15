@@ -10,10 +10,10 @@ use rspotify::model::SubscriptionLevel;
 use rspotify::prelude::{BaseClient, Id, OAuthClient};
 use rspotify::Token;
 use sea_orm::{ActiveModelBehavior, ActiveModelTrait, ColumnTrait, EntityTrait, QueryFilter, Set};
+use serde::Deserialize;
 use serde_json::json;
 
 use crate::error::{PhonosError, PhonosResult};
-use crate::models::spotify::SpotifyCreds;
 use crate::util::generate_session_token;
 use crate::util::spotify::{client_with_token, init_client};
 use crate::AppState;
@@ -23,6 +23,12 @@ pub fn router() -> Router<AppState> {
         .route("/", post(login).delete(logout))
         .route("/url", get(login_url))
         .route("/callback", get(callback))
+}
+
+#[derive(Deserialize)]
+struct SpotifyCreds {
+    pub access_token: String,
+    pub refresh_token: Option<String>,
 }
 
 async fn login(

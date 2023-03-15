@@ -31,7 +31,7 @@ pub async fn auth<B>(
 
     let auth_token = &auth_header[7..];
 
-    let result: Option<(session::Model, Option<user::Model>)> = Session::find()
+    let result = Session::find()
         .filter(session::Column::Token.eq(auth_token))
         .find_also_related(User)
         .one(&state.db)

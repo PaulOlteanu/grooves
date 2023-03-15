@@ -1,16 +1,24 @@
+use std::collections::HashMap;
 use std::sync::Arc;
 
 use sea_orm::{Database, DatabaseConnection};
+use tokio::sync::{Mutex, RwLock};
 
 mod error;
 mod extractors;
 mod middleware;
 mod models;
+mod player_connection;
 mod routes;
 mod util;
 
+use player_connection::PlayerConnection;
+
+// TODO: We need some way to delete player connections when the player closes
 pub struct State {
     db: DatabaseConnection,
+    // User id to player
+    players: RwLock<HashMap<i32, Arc<Mutex<PlayerConnection>>>>,
 }
 
 type AppState = Arc<State>;
@@ -33,7 +41,10 @@ async fn main() {
 
     let db: DatabaseConnection = Database::connect(database_url).await.unwrap();
 
-    let state = Arc::new(State { db });
+    let state = Arc::new(State {
+        db,
+        players: RwLock::new(HashMap::new()),
+    });
 
     let router = routes::router(state.clone()).with_state(state);
 

@@ -1,7 +1,10 @@
+use std::sync::PoisonError;
+
 use axum::http::StatusCode;
 use axum::response::IntoResponse;
 use rspotify::model::IdError;
 use rspotify::ClientError;
+use tokio::sync::mpsc::error::SendError;
 
 pub enum PhonosError {
     NotFound,
@@ -31,6 +34,24 @@ impl From<sea_orm::DbErr> for PhonosError {
 
 impl From<serde_json::Error> for PhonosError {
     fn from(value: serde_json::Error) -> Self {
+        Self::OtherError(value.to_string())
+    }
+}
+
+impl From<axum::Error> for PhonosError {
+    fn from(value: axum::Error) -> Self {
+        Self::OtherError(value.to_string())
+    }
+}
+
+impl<T> From<PoisonError<T>> for PhonosError {
+    fn from(_value: PoisonError<T>) -> Self {
+        Self::OtherError("Tried to lock poisoned mutex".to_string())
+    }
+}
+
+impl<T> From<SendError<T>> for PhonosError {
+    fn from(value: SendError<T>) -> Self {
         Self::OtherError(value.to_string())
     }
 }
