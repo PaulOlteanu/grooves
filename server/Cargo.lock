@@ -719,6 +719,51 @@ dependencies = [
 ]
 
 [[package]]
+name = "grooves-entity"
+version = "0.1.0"
+dependencies = [
+ "rspotify",
+ "sea-orm",
+ "serde",
+ "serde_json",
+]
+
+[[package]]
+name = "grooves-player"
+version = "0.1.0"
+dependencies = [
+ "grooves-entity",
+ "itertools",
+ "rand",
+ "rspotify",
+ "serde",
+ "serde_json",
+ "tokio",
+]
+
+[[package]]
+name = "grooves-server"
+version = "0.1.0"
+dependencies = [
+ "axum",
+ "axum-macros",
+ "dotenvy",
+ "futures",
+ "grooves-entity",
+ "grooves-player",
+ "if_chain",
+ "rand",
+ "rspotify",
+ "sea-orm",
+ "serde",
+ "serde_json",
+ "tokio",
+ "tower-http",
+ "tracing",
+ "tracing-subscriber",
+]
+
+[[package]]
 name = "h2"
 version = "0.3.16"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1324,51 +1369,6 @@ name = "percent-encoding"
 version = "2.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "478c572c3d73181ff3c2539045f6eb99e5491218eae919370993b890cdbdd98e"
-
-[[package]]
-name = "phonos-axum"
-version = "0.1.0"
-dependencies = [
- "axum",
- "axum-macros",
- "dotenvy",
- "futures",
- "if_chain",
- "phonos-entity",
- "phonos-player",
- "rand",
- "rspotify",
- "sea-orm",
- "serde",
- "serde_json",
- "tokio",
- "tower-http",
- "tracing",
- "tracing-subscriber",
-]
-
-[[package]]
-name = "phonos-entity"
-version = "0.1.0"
-dependencies = [
- "rspotify",
- "sea-orm",
- "serde",
- "serde_json",
-]
-
-[[package]]
-name = "phonos-player"
-version = "0.1.0"
-dependencies = [
- "itertools",
- "phonos-entity",
- "rand",
- "rspotify",
- "serde",
- "serde_json",
- "tokio",
-]
 
 [[package]]
 name = "pin-project"

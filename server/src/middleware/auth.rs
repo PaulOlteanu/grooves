@@ -2,18 +2,18 @@ use axum::extract::State;
 use axum::http::{self, Request};
 use axum::middleware::Next;
 use axum::response::Response;
-use phonos_entity::session::{self, Entity as Session};
-use phonos_entity::user::{self, Entity as User};
+use grooves_entity::session::{self, Entity as Session};
+use grooves_entity::user::Entity as User;
 use sea_orm::{ColumnTrait, EntityTrait, QueryFilter};
 
-use crate::error::{PhonosError, PhonosResult};
+use crate::error::{GroovesError, GroovesResult};
 use crate::AppState;
 
 pub async fn auth<B>(
     State(state): State<AppState>,
     mut req: Request<B>,
     next: Next<B>,
-) -> PhonosResult<Response> {
+) -> GroovesResult<Response> {
     let auth_header = req
         .headers()
         .get(http::header::AUTHORIZATION)
@@ -22,11 +22,11 @@ pub async fn auth<B>(
     let auth_header = if let Some(auth_header) = auth_header {
         auth_header
     } else {
-        return Err(PhonosError::Unauthorized);
+        return Err(GroovesError::Unauthorized);
     };
 
     if !auth_header.starts_with("Bearer ") {
-        return Err(PhonosError::Unauthorized);
+        return Err(GroovesError::Unauthorized);
     }
 
     let auth_token = &auth_header[7..];
@@ -42,5 +42,5 @@ pub async fn auth<B>(
         return Ok(next.run(req).await);
     }
 
-    Err(PhonosError::Unauthorized)
+    Err(GroovesError::Unauthorized)
 }

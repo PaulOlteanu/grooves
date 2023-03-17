@@ -1,5 +1,5 @@
 [package]
-name = "phonos-axum"
+name = "grooves-server"
 version = "0.1.0"
 edition = "2021"
 
@@ -11,8 +11,8 @@ axum-macros = "0.3.4"
 dotenvy = "0.15"
 futures = "0.3"
 if_chain = "1.0"
-phonos-entity = { path = "phonos-entity" }
-phonos-player = { path = "phonos-player" }
+grooves-entity = { path = "grooves-entity" }
+grooves-player = { path = "grooves-player" }
 rand = "0.8"
 # rspotify = "0.11"
 rspotify = { path = "../../rspotify" }
@@ -31,4 +31,4 @@ tracing = "0.1"
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 
 [workspace]
-members = ["phonos-entity", "phonos-migration", "phonos-player"]
+members = ["grooves-entity", "grooves-migration", "grooves-player"]

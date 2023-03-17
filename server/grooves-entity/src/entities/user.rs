@@ -10,7 +10,7 @@ pub struct Model {
     pub id: i32,
     pub spotify_id: String,
     #[sea_orm(column_type = "JsonBinary", nullable)]
-    pub token: Option<Json>,
+    pub token: Option<Token>,
 }
 
 #[derive(Copy, Clone, Debug, EnumIter, DeriveRelation)]
@@ -34,3 +34,12 @@ impl Related<super::session::Entity> for Entity {
 }
 
 impl ActiveModelBehavior for ActiveModel {}
+
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize, FromJsonQueryResult)]
+pub struct Token(pub rspotify::Token);
+
+impl From<rspotify::Token> for Token {
+    fn from(value: rspotify::Token) -> Self {
+        Self(value)
+    }
+}

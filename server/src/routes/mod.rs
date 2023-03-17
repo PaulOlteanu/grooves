@@ -7,7 +7,7 @@ use tower_http::trace::TraceLayer;
 use crate::AppState;
 
 mod auth;
-mod player;
+pub mod player;
 mod playlists;
 mod spotify;
 
@@ -25,7 +25,7 @@ pub fn router(state: AppState) -> Router<AppState> {
     Router::<AppState>::new()
         .route("/", get(|| async { "Hello, World!" }))
         .nest("/auth", auth::router())
-        .nest("/player", player::router())
+        .nest("/player", player::router(state.clone()))
         .nest("/playlists", playlists::router(state.clone()))
         .nest("/spotify", spotify::router(state))
         .layer(cors)

@@ -5,16 +5,15 @@ use axum::response::IntoResponse;
 use axum::routing::get;
 use axum::{Extension, Json, Router};
 use axum_macros::debug_handler;
-use phonos_entity::playlist::Song;
-use phonos_entity::user;
+use grooves_entity::playlist::Song;
+use grooves_entity::user;
 use rspotify::model::{AlbumId, SearchResult, SearchType, SimplifiedAlbum};
 use rspotify::prelude::{BaseClient, Id};
-use rspotify::Token;
 use sea_orm::{ActiveModelBehavior, ActiveModelTrait, Set};
 use serde::Serialize;
 use serde_json::json;
 
-use crate::error::{PhonosError, PhonosResult};
+use crate::error::{GroovesError, GroovesResult};
 use crate::util::spotify;
 use crate::{middleware, AppState};
 
@@ -40,13 +39,12 @@ async fn search(
     State(state): State<AppState>,
     Extension(current_user): Extension<user::Model>,
     Query(params): Query<HashMap<String, String>>,
-) -> PhonosResult<impl IntoResponse> {
+) -> GroovesResult<impl IntoResponse> {
     let query = params
         .get("q")
-        .ok_or(PhonosError::OtherError("Invalid query".to_string()))?;
+        .ok_or(GroovesError::OtherError("Invalid query".to_string()))?;
 
-    let token = current_user.token.ok_or(PhonosError::Unauthorized)?;
-    let token: Token = serde_json::from_value(token)?;
+    let token = current_user.token.ok_or(GroovesError::Unauthorized)?.0;
 
     let client = spotify::client_with_token(token);
 
@@ -65,7 +63,9 @@ async fn search(
             })
             .collect()
     } else {
-        return Err(PhonosError::OtherError("Spotify search failed".to_string()));
+        return Err(GroovesError::OtherError(
+            "Spotify search failed".to_string(),
+        ));
     };
 
     let albums = client
@@ -83,14 +83,17 @@ async fn search(
             })
             .collect()
     } else {
-        return Err(PhonosError::OtherError("Spotify search failed".to_string()));
+        return Err(GroovesError::OtherError(
+            "Spotify search failed".to_string(),
+        ));
     };
 
     let mut active_user = user::ActiveModel::new();
     active_user.id = Set(current_user.id);
     let token = client.get_token();
     let token = token.lock().await.unwrap();
-    active_user.token = Set(Some(json!(*token)));
+    let token = token.as_ref().map(|t| t.clone().into());
+    active_user.token = Set(token);
 
     active_user.update(&state.db).await?;
 
@@ -103,9 +106,8 @@ async fn album_songs(
     State(state): State<AppState>,
     Extension(current_user): Extension<user::Model>,
     Path(album_id): Path<String>,
-) -> PhonosResult<impl IntoResponse> {
-    let token = current_user.token.ok_or(PhonosError::Unauthorized)?;
-    let token: Token = serde_json::from_value(token)?;
+) -> GroovesResult<impl IntoResponse> {
+    let token = current_user.token.ok_or(GroovesError::Unauthorized)?.0;
 
     let client = spotify::client_with_token(token);
 
@@ -125,7 +127,8 @@ async fn album_songs(
     active_user.id = Set(current_user.id);
     let token = client.get_token();
     let token = token.lock().await.unwrap();
-    active_user.token = Set(Some(json!(*token)));
+    let token = token.as_ref().map(|t| t.clone().into());
+    active_user.token = Set(token);
 
     active_user.update(&state.db).await?;
 

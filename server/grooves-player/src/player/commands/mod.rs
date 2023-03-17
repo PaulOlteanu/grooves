@@ -1,6 +1,6 @@
 // TODO: Command to change device id?
 
-use phonos_entity::playlist;
+use grooves_entity::playlist;
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Serialize, Deserialize)]

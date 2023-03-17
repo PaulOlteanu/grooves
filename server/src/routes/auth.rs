@@ -4,16 +4,15 @@ use axum::extract::{Query, State};
 use axum::response::IntoResponse;
 use axum::routing::{get, post};
 use axum::{Json, Router};
-use phonos_entity::session;
-use phonos_entity::user::{self, Entity as User};
+use grooves_entity::session;
+use grooves_entity::user::{self, Entity as User};
 use rspotify::model::SubscriptionLevel;
 use rspotify::prelude::{BaseClient, Id, OAuthClient};
-use rspotify::Token;
 use sea_orm::{ActiveModelBehavior, ActiveModelTrait, ColumnTrait, EntityTrait, QueryFilter, Set};
 use serde::Deserialize;
 use serde_json::json;
 
-use crate::error::{PhonosError, PhonosResult};
+use crate::error::{GroovesError, GroovesResult};
 use crate::util::generate_session_token;
 use crate::util::spotify::{client_with_token, init_client};
 use crate::AppState;
@@ -34,8 +33,8 @@ struct SpotifyCreds {
 async fn login(
     State(state): State<AppState>,
     Json(payload): Json<SpotifyCreds>,
-) -> PhonosResult<impl IntoResponse> {
-    let token = Token {
+) -> GroovesResult<impl IntoResponse> {
+    let token = rspotify::Token {
         access_token: payload.access_token,
         refresh_token: payload.refresh_token,
         // TODO: Set scopes
@@ -45,22 +44,16 @@ async fn login(
     let client = client_with_token(token.clone());
     client.refresh_token().await?;
 
-    let token = client.get_token();
-    let token_lock = token.lock().await;
-    let token_lock = token_lock.unwrap();
-    let token = token_lock.clone().unwrap();
-    drop(token_lock);
-
-    let token_value = json!(token);
-    println!("{:?}", token_value);
-    let token_deser: Result<Token, _> = serde_json::from_value(token_value);
-
-    println!("{:?}", token_deser);
+    let token = {
+        let token = client.get_token();
+        let token = token.lock().await.unwrap();
+        token.as_ref().map(|t| t.clone().into())
+    };
 
     let user = client.me().await?;
 
     if user.product.is_none() || user.product.unwrap() != SubscriptionLevel::Premium {
-        return Err(PhonosError::OtherError("Must be premium user".to_owned()));
+        return Err(GroovesError::OtherError("Must be premium user".to_owned()));
     }
 
     let existing_user = User::find()
@@ -70,12 +63,12 @@ async fn login(
 
     let user: user::Model = if let Some(user) = existing_user {
         let mut active_user: user::ActiveModel = user.into();
-        active_user.token = Set(Some(json!(token)));
+        active_user.token = Set(token);
         active_user.update(&state.db).await?
     } else {
         let mut active_user = user::ActiveModel::new();
         active_user.spotify_id = Set(user.id.id().to_owned());
-        active_user.token = Set(Some(json!(token)));
+        active_user.token = Set(token);
         active_user.insert(&state.db).await?
     };
 
@@ -95,7 +88,7 @@ async fn login(
     Ok(Json(json!({ "token": session.token })))
 }
 
-async fn login_url() -> PhonosResult<impl IntoResponse> {
+async fn login_url() -> GroovesResult<impl IntoResponse> {
     let client = init_client();
     let result = client.get_authorize_url(false)?;
     Ok(Json(json!({ "url": result })))
@@ -103,10 +96,10 @@ async fn login_url() -> PhonosResult<impl IntoResponse> {
 
 async fn callback(
     Query(params): Query<HashMap<String, String>>,
-) -> PhonosResult<impl IntoResponse> {
+) -> GroovesResult<impl IntoResponse> {
     let code = params
         .get("code")
-        .ok_or(PhonosError::OtherError("Missing code".to_owned()))?;
+        .ok_or(GroovesError::OtherError("Missing code".to_owned()))?;
 
     let client = init_client();
 
@@ -122,7 +115,7 @@ async fn callback(
         }
     }
 
-    Err(PhonosError::OtherError("Couldn't authenticate".to_owned()))
+    Err(GroovesError::OtherError("Couldn't authenticate".to_owned()))
 }
 
 // TODO: This

@@ -115,6 +115,18 @@ async function albumSongs(albumId: string) {
   return data;
 }
 
+async function sendPlayerCommand(command: object) {
+  const { data } = await axios.post(`${API_URL}/player`, command, {
+    headers: {
+      Authorization: `Bearer ${API_TOKEN}`,
+    },
+  });
+
+  console.log(data);
+
+  return data;
+}
+
 export default {
   isApiError,
   getPlaylists,
@@ -124,4 +136,5 @@ export default {
   deletePlaylist,
   search,
   albumSongs,
+  sendPlayerCommand,
 };
