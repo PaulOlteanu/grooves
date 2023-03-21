@@ -39,7 +39,7 @@ export default function Navbar() {
         className="text-white no-underline hover:no-underline font-extrabold text-xl"
         to="/"
       >
-        Phonos
+        Grooves
       </Link>
 
       <div className="flex-grow items-center w-auto block">

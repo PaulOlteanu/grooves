@@ -12,6 +12,7 @@ mod routes;
 mod util;
 
 use player_connection::PlayerConnection;
+use tracing_subscriber::{prelude::*, util::SubscriberInitExt};
 use util::spotify::client_with_token;
 
 // TODO: We need some way to delete player connections when the player closes
@@ -43,21 +44,23 @@ type AppState = Arc<State>;
 
 #[tokio::main]
 async fn main() {
-    std::env::set_var("RUST_LOG", "debug");
-    tracing_subscriber::fmt::init();
+    // std::env::set_var("RUST_LOG", "debug");
+    // tracing_subscriber::fmt::init();
     dotenvy::dotenv().ok();
     // TODO: Make this not bad
-    // tracing_subscriber::registry()
-    //     .with(
-    //         tracing_subscriber::EnvFilter::try_from_default_env()
-    //             .unwrap_or_else(|_| "grooves_axum=debug,tower_http=debug".into()),
-    //     )
-    //     .with(tracing_subscriber::fmt::layer())
-    //     .init();
+    tracing_subscriber::registry()
+        .with(
+            tracing_subscriber::EnvFilter::try_from_default_env()
+                .unwrap_or_else(|_| "grooves_axum=debug,tower_http=debug".into()),
+        )
+        .with(tracing_subscriber::fmt::layer())
+        .init();
 
     let database_url = std::env::var("DATABASE_URL").expect("DATABASE_URL must be set");
 
-    let db: DatabaseConnection = Database::connect(database_url).await.unwrap();
+    let db: DatabaseConnection = Database::connect(database_url)
+        .await
+        .expect("couldn't connect to database");
 
     let state = Arc::new(State {
         db,
@@ -66,8 +69,8 @@ async fn main() {
 
     let router = routes::router(state.clone()).with_state(state);
 
-    axum::Server::bind(&"0.0.0.0:4000".parse().unwrap())
+    axum::Server::bind(&"0.0.0.0:4000".parse().expect("couldn't create binding"))
         .serve(router.into_make_service())
         .await
-        .unwrap();
+        .expect("couldn't create server");
 }
