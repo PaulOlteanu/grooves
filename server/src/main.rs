@@ -2,6 +2,7 @@ use std::collections::HashMap;
 use std::sync::Arc;
 
 use sea_orm::{Database, DatabaseConnection};
+use state::State;
 use tokio::sync::Mutex;
 
 mod error;
@@ -9,36 +10,11 @@ mod extractors;
 mod middleware;
 mod player_connection;
 mod routes;
+mod state;
 mod util;
 
-use player_connection::PlayerConnection;
-use tracing_subscriber::{prelude::*, util::SubscriberInitExt};
-use util::spotify::client_with_token;
-
-// TODO: We need some way to delete player connections when the player closes
-pub struct State {
-    db: DatabaseConnection,
-    // User id to player
-    players: Mutex<HashMap<i32, Arc<Mutex<PlayerConnection>>>>,
-}
-
-impl State {
-    pub async fn get_or_create_player(
-        &self,
-        user_id: i32,
-        user_token: rspotify::Token,
-    ) -> Arc<Mutex<PlayerConnection>> {
-        let client = client_with_token(user_token);
-        let mut players = self.players.lock().await;
-        match players.get(&user_id) {
-            Some(connection) => connection.clone(),
-            None => players
-                .entry(user_id)
-                .or_insert(Arc::new(Mutex::new(PlayerConnection::new(client))))
-                .clone(),
-        }
-    }
-}
+use tracing_subscriber::prelude::*;
+use tracing_subscriber::util::SubscriberInitExt;
 
 type AppState = Arc<State>;
 
@@ -65,6 +41,7 @@ async fn main() {
     let state = Arc::new(State {
         db,
         players: Mutex::new(HashMap::new()),
+        awaiting_player: std::sync::Mutex::new(HashMap::new()),
     });
 
     let router = routes::router(state.clone()).with_state(state);

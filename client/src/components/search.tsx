@@ -1,5 +1,5 @@
 import _ from "lodash";
-import { Plus } from "phosphor-react";
+import { Plus } from "@phosphor-icons/react";
 import { useRef, useState } from "react";
 import api, { SearchResults } from "../api";
 import { PlaylistElement } from "../types";

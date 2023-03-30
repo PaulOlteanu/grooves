@@ -1,3 +1,5 @@
+use std::sync::PoisonError;
+
 use axum::http::StatusCode;
 use axum::response::IntoResponse;
 use rspotify::model::IdError;
@@ -43,11 +45,11 @@ impl From<axum::Error> for GroovesError {
     }
 }
 
-// impl<T> From<PoisonError<T>> for GroovesError {
-//     fn from(_value: PoisonError<T>) -> Self {
-//         Self::OtherError("Tried to lock poisoned mutex".to_string())
-//     }
-// }
+impl<T> From<PoisonError<T>> for GroovesError {
+    fn from(_value: PoisonError<T>) -> Self {
+        Self::OtherError("Tried to lock poisoned mutex".to_string())
+    }
+}
 
 impl<T> From<SendError<T>> for GroovesError {
     fn from(value: SendError<T>) -> Self {

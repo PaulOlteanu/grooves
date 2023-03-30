@@ -3,14 +3,17 @@
 use grooves_entity::playlist;
 use serde::{Deserialize, Serialize};
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct PlayData {
+    pub playlist: playlist::Model,
+    pub element_index: Option<usize>,
+    pub song_index: Option<usize>,
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize)]
 #[serde(tag = "type", rename_all = "snake_case")]
 pub enum Command {
-    Play {
-        playlist: playlist::Model,
-        element_index: Option<usize>,
-        song_index: Option<usize>,
-    },
+    Play(PlayData),
     Pause,
     Resume,
     NextSong,

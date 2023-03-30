@@ -1,5 +1,5 @@
 import _ from "lodash";
-import { Plus, X } from "phosphor-react";
+import { Plus, X } from "@phosphor-icons/react";
 import { useState } from "react";
 import { useMutation, useQueryClient } from "react-query";
 import { NavLink } from "react-router-dom";

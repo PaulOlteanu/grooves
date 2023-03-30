@@ -28,7 +28,6 @@ export default function Navbar() {
   // const { apiToken } = useAuth();
 
   // TODO: Make this better
-  // const baseClasses = "inline-block py-2 px-4"
   const activeClasses = "inline-block text-white font-bold no-underline";
   const inactiveClasses =
     "inline-block no-underline hover:text-gray-200 hover:text-underline";

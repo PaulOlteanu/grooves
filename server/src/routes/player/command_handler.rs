@@ -4,7 +4,7 @@ use axum::{Extension, Json};
 use axum_macros::debug_handler;
 use grooves_entity::playlist::Entity as Playlist;
 use grooves_entity::user::{self, Token};
-use grooves_player::player::commands::Command;
+use grooves_player::player::commands::{Command, PlayData};
 use sea_orm::EntityTrait;
 use serde::{Deserialize, Serialize};
 
@@ -39,16 +39,24 @@ impl CommandRequest {
                 song_index,
             } => {
                 if let Some(playlist) = Playlist::find_by_id(playlist_id).one(&state.db).await? {
-                    Ok(Some(Command::Play {
+                    Ok(Some(Command::Play(PlayData {
                         playlist,
                         element_index,
                         song_index,
-                    }))
+                    })))
                 } else {
                     Ok(None)
                 }
             }
-            _ => Ok(None),
+            Self::Pause => Ok(Some(Command::Pause)),
+            Self::Resume => Ok(Some(Command::Resume)),
+            Self::NextSong => Ok(Some(Command::NextSong)),
+            Self::PrevSong => Ok(Some(Command::PrevSong)),
+            Self::NextElement => Ok(Some(Command::NextElement)),
+            Self::PrevElement => Ok(Some(Command::PrevElement)),
+            Self::AddToQueue => Ok(Some(Command::AddToQueue)),
+            Self::RemoveFromQueue => Ok(Some(Command::RemoveFromQueue)),
+            Self::Exit => Ok(Some(Command::Exit)),
         }
     }
 }
@@ -67,19 +75,26 @@ pub async fn handler(
         ));
     };
 
-    let connection = state.get_or_create_player(current_user.id, token).await;
-
     if let Some(command) = payload.to_player_command(state.clone()).await? {
-        let sender = {
-            let lock = connection.lock().await;
-            lock.sender.clone()
-        };
-        sender.send(command)?;
+        if let Command::Play(ref play_data) = command {
+            if let Some(connection) = state.get_player(&current_user.id).await {
+                connection.sender.send(command)?;
+            } else {
+                state
+                    .create_player(current_user.id, token, play_data.clone())
+                    .await?;
+            }
 
-        Ok("sent command")
+            Ok("sent command")
+        } else if let Some(connection) = state.get_player(&current_user.id).await {
+            connection.sender.send(command)?;
+            Ok("sent command")
+        } else {
+            Err(GroovesError::OtherError("no player for user".to_string()))
+        }
     } else {
         Err(GroovesError::OtherError(
-            "couldn't create command".to_string(),
+            "invalid player command".to_string(),
         ))
     }
 }

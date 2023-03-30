@@ -1,4 +1,5 @@
-import { X, Trash } from "phosphor-react";
+import { X, Trash, Play } from "@phosphor-icons/react";
+import api from "../api";
 import usePlaylist from "../hooks/usePlaylist";
 import type {
   PlaylistElement,
@@ -83,9 +84,24 @@ export default function Playlist({ playlist }: { playlist: PlaylistT }) {
     );
   });
 
+  const play_playlist = {
+    type: "play",
+    playlist_id: playlist.id,
+  };
+
   return (
     <div className="h-full max-h-full w-full overflow-auto">
-      <h1 className="text-center text-2xl font-bold py-1">{playlist.name}</h1>
+      <div className="text-center items-center">
+        <p className="text-center text-2xl font-bold py-1">
+          {playlist.name}
+          <button
+            onClick={() => void api.sendPlayerCommand(play_playlist)}
+            className="float-right pr-2 inline-block"
+          >
+            <Play size={32} />
+          </button>
+        </p>
+      </div>
       <div className="w-full p-2">{elements}</div>
     </div>
   );

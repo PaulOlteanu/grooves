@@ -34,28 +34,23 @@ async fn handle_connect(mut socket: WebSocket, state: AppState) {
         return;
     };
 
-    let token = if let Some(token) = user.token {
-        token.0
-    } else {
-        return;
-    };
+    loop {
+        let connection = state.await_player(user.id).await;
+        let mut receiver = connection.receiver;
 
-    let connection = state.get_or_create_player(user.id, token).await;
+        // Loop and wait for player state updates, begin sending them
+        while receiver.changed().await.is_ok() {
+            let m = serde_json::to_string(&*receiver.borrow());
+            if let Ok(msg) = m {
+                if socket.send(Message::Text(msg)).await.is_err() {
+                    return;
+                }
+            } else if socket.send(Message::Text("".to_string())).await.is_err() {
+                return;
+            };
+        }
 
-    let mut receiver = {
-        let lock = connection.lock().await;
-        lock.receiver.clone()
-    };
-
-    // Loop and wait for player state updates, begin sending them
-    while receiver.changed().await.is_ok() {
-        let msg = if let Ok(msg) = serde_json::to_string(&*receiver.borrow()) {
-            msg
-        } else {
-            return;
-        };
-
-        if socket.send(Message::Text(msg)).await.is_err() {
+        if socket.send(Message::Binary(Vec::new())).await.is_err() {
             return;
         }
     }
