@@ -1,35 +1,14 @@
-import { useMutation, useQuery, useQueryClient } from "react-query";
-import { useLoaderData, useParams } from "react-router-dom";
+import { useParams } from "react-router-dom";
 import api from "../../api";
 import { default as PlaylistComponent } from "../../components/playlist";
 import Search from "../../components/search";
-import { Playlist, PlaylistElement } from "../../types";
+import { useAuth } from "../../contexts/auth";
+import usePlaylist from "../../hooks/usePlaylist";
+import { ApiToken, Playlist, PlaylistElement } from "../../types";
 import { addElement } from "../../util/playlists";
 
 function Page({ playlistId }: { playlistId: number }) {
-  const queryClient = useQueryClient();
-  const {
-    isLoading,
-    isError,
-    data: playlist,
-  } = useQuery(
-    ["playlist", playlistId],
-    async () => await api.getPlaylist(playlistId),
-    { retry: false }
-  );
-
-  const updatePlaylistMutation = useMutation(
-    (playlist: Playlist) => {
-      return api.updatePlaylist(playlist);
-    },
-    {
-      onSuccess: (playlist) => {
-        void queryClient.invalidateQueries({
-          queryKey: ["playlist", playlist.id],
-        });
-      },
-    }
-  );
+  const { playlist, updatePlaylistMutation } = usePlaylist(playlistId);
 
   if (playlist) {
     const addAlbum = (newElement: PlaylistElement) => {
@@ -55,8 +34,10 @@ function Page({ playlistId }: { playlistId: number }) {
 
 export default function PlaylistPage() {
   const { playlistId } = useParams();
+  const { token } = useAuth();
+
   const id = parseInt(playlistId || "");
-  if (!Number.isNaN(id)) {
+  if (!Number.isNaN(id) && token) {
     return <Page playlistId={id} />;
   }
 

@@ -1,6 +1,6 @@
 import axios from "axios";
-import { API_TOKEN, API_URL } from "./constants";
-import { Playlist, Song } from "./types";
+import { API_URL } from "./constants";
+import { ApiToken, Playlist, Song } from "./types";
 
 export type ApiError = {
   message: string;
@@ -12,23 +12,25 @@ function isApiError(x: unknown): x is ApiError {
   return (x as ApiError).message !== undefined;
 }
 
-async function getPlaylists() {
+async function getPlaylists(token: ApiToken) {
+  console.log("Getting playlists with token: " + token);
   const { data } = await axios.get<Playlist[]>(`${API_URL}/playlists`, {
     headers: {
-      Authorization: `Bearer ${API_TOKEN}`,
+      Authorization: `Bearer ${token}`,
     },
   });
 
   return data;
 }
 
-async function createPlaylist(name: string) {
+// TODO: Make this take a playlist
+async function createPlaylist(name: string, token: ApiToken) {
   const { data } = await axios.post<Playlist>(
     `${API_URL}/playlists`,
     { name, elements: [] },
     {
       headers: {
-        Authorization: `Bearer ${API_TOKEN}`,
+        Authorization: `Bearer ${token}`,
       },
     }
   );
@@ -36,12 +38,13 @@ async function createPlaylist(name: string) {
   return data;
 }
 
-async function getPlaylist(playlistId: number) {
+async function getPlaylist(playlistId: number, token: ApiToken) {
+  console.log("Getting playlist with token: " + token);
   const { data } = await axios.get<Playlist>(
     `${API_URL}/playlists/${playlistId}`,
     {
       headers: {
-        Authorization: `Bearer ${API_TOKEN}`,
+        Authorization: `Bearer ${token}`,
       },
     }
   );
@@ -49,13 +52,13 @@ async function getPlaylist(playlistId: number) {
   return data;
 }
 
-async function updatePlaylist(playlist: Playlist) {
+async function updatePlaylist(playlist: Playlist, token: ApiToken) {
   const { data } = await axios.put<Playlist>(
     `${API_URL}/playlists/${playlist.id}`,
     playlist,
     {
       headers: {
-        Authorization: `Bearer ${API_TOKEN}`,
+        Authorization: `Bearer ${token}`,
       },
     }
   );
@@ -63,10 +66,10 @@ async function updatePlaylist(playlist: Playlist) {
   return data;
 }
 
-async function deletePlaylist(playlistId: number) {
+async function deletePlaylist(playlistId: number, token: ApiToken) {
   return axios.delete(`${API_URL}/playlists/${playlistId}`, {
     headers: {
-      Authorization: `Bearer ${API_TOKEN}`,
+      Authorization: `Bearer ${token}`,
     },
   });
 }
@@ -89,12 +92,12 @@ export type SearchResults = {
   albums: AlbumSearchResult[];
 };
 
-async function search(query: string) {
+async function search(query: string, token: ApiToken) {
   const { data } = await axios.get<SearchResults>(
     `${API_URL}/spotify/search?q=${query}`,
     {
       headers: {
-        Authorization: `Bearer ${API_TOKEN}`,
+        Authorization: `Bearer ${token}`,
       },
     }
   );
@@ -102,12 +105,12 @@ async function search(query: string) {
   return data;
 }
 
-async function albumSongs(albumId: string) {
+async function albumSongs(albumId: string, token: ApiToken) {
   const { data } = await axios.get<Song[]>(
     `${API_URL}/spotify/album_songs/${albumId}`,
     {
       headers: {
-        Authorization: `Bearer ${API_TOKEN}`,
+        Authorization: `Bearer ${token}`,
       },
     }
   );
@@ -115,14 +118,12 @@ async function albumSongs(albumId: string) {
   return data;
 }
 
-async function sendPlayerCommand(command: object) {
+async function sendPlayerCommand(command: object, token: ApiToken) {
   const { data } = await axios.post(`${API_URL}/player`, command, {
     headers: {
-      Authorization: `Bearer ${API_TOKEN}`,
+      Authorization: `Bearer ${token}`,
     },
   });
-
-  console.log(data);
 
   return data;
 }

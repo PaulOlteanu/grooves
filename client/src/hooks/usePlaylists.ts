@@ -1,9 +1,11 @@
 import { useMutation, useQuery, useQueryClient } from "react-query";
 import api from "../api";
-import { Playlist } from "../types";
+import { useAuth } from "../contexts/auth";
 
 export default function usePlaylists() {
   const queryClient = useQueryClient();
+  const { token } = useAuth();
+
   const {
     isLoading,
     isError,
@@ -11,14 +13,22 @@ export default function usePlaylists() {
   } = useQuery(
     "playlists",
     async () => {
-      return await api.getPlaylists();
+      if (!token) {
+        return Promise.reject();
+      } else {
+        return await api.getPlaylists(token);
+      }
     },
     { retry: false }
   );
 
   const createPlaylistMutation = useMutation(
     (name: string) => {
-      return api.createPlaylist(name);
+      if (!token) {
+        return Promise.reject();
+      } else {
+        return api.createPlaylist(name, token);
+      }
     },
     {
       onSuccess: () => {

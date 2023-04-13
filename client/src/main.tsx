@@ -10,6 +10,9 @@ import { QueryClient, QueryClientProvider } from "react-query";
 import PlaylistsPage from "./routes/playlists/playlistsPage";
 import PlaylistPage from "./routes/playlists/playlistPage";
 import Player from "./routes/player";
+import { AuthProvider } from "./contexts/auth";
+import LoginCallback from "./routes/callback";
+import Index from "./routes";
 
 const router = createBrowserRouter([
   {
@@ -17,6 +20,12 @@ const router = createBrowserRouter([
     element: <Root />,
     errorElement: <ErrorPage />,
     children: [
+      { path: "", element: <Index /> },
+      {
+        path: "callback",
+        element: <LoginCallback />,
+      },
+
       {
         path: "playlists",
         element: <PlaylistsPage />,
@@ -39,8 +48,10 @@ const queryClient = new QueryClient();
 
 ReactDOM.createRoot(document.getElementById("root") as HTMLElement).render(
   <React.StrictMode>
-    <QueryClientProvider client={queryClient}>
-      <RouterProvider router={router} />
-    </QueryClientProvider>
+    <AuthProvider>
+      <QueryClientProvider client={queryClient}>
+        <RouterProvider router={router} />
+      </QueryClientProvider>
+    </AuthProvider>
   </React.StrictMode>
 );

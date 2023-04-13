@@ -1,14 +1,14 @@
 import { NavLink, Link, useNavigate } from "react-router-dom";
-// import { useAuth } from "../auth/context";
+import { useAuth } from "../contexts/auth";
 
 function LogoutButton() {
   const navigate = useNavigate();
 
-  // const { setApiToken } = useAuth();
+  const { setToken } = useAuth();
 
   function handleLogout() {
     localStorage.clear();
-    // setApiToken(null);
+    setToken(null);
     navigate("/");
   }
 
@@ -25,7 +25,7 @@ function LogoutButton() {
 
 // TODO: Hamburger menu
 export default function Navbar() {
-  // const { apiToken } = useAuth();
+  const { token } = useAuth();
 
   // TODO: Make this better
   const activeClasses = "inline-block text-white font-bold no-underline";
@@ -73,10 +73,9 @@ export default function Navbar() {
               Player
             </NavLink>
           </li>
+          <li>{token ? <LogoutButton /> : null}</li>
         </ul>
       </div>
-
-      {/* {apiToken ? <LogoutButton /> : null} */}
     </nav>
   );
 }

@@ -1,5 +1,6 @@
 import { X, Trash, Play } from "@phosphor-icons/react";
 import api from "../api";
+import { useAuth } from "../contexts/auth";
 import usePlaylist from "../hooks/usePlaylist";
 import type {
   PlaylistElement,
@@ -63,6 +64,12 @@ function Element({
 
 export default function Playlist({ playlist }: { playlist: PlaylistT }) {
   const { updatePlaylistMutation } = usePlaylist(playlist.id);
+  const { token } = useAuth();
+
+  if (!token) {
+    return null;
+  }
+
   const elements = playlist.elements.map((e, i) => {
     const onDelete = () => {
       const updatedPlaylist = removeElement(playlist, i);
@@ -95,7 +102,7 @@ export default function Playlist({ playlist }: { playlist: PlaylistT }) {
         <p className="text-center text-2xl font-bold py-1">
           {playlist.name}
           <button
-            onClick={() => void api.sendPlayerCommand(play_playlist)}
+            onClick={() => void api.sendPlayerCommand(play_playlist, token)}
             className="float-right pr-2 inline-block"
           >
             <Play size={32} />

@@ -3,6 +3,7 @@ import { Plus } from "@phosphor-icons/react";
 import { useRef, useState } from "react";
 import api, { SearchResults } from "../api";
 import { PlaylistElement } from "../types";
+import { useAuth } from "../contexts/auth";
 
 function SearchResult({
   name,
@@ -42,16 +43,17 @@ export default function Search({
 }) {
   const [searchText, setSearchText] = useState("");
   const [results, setResults] = useState<SearchResults | null>(null);
+  const { token } = useAuth();
 
   const debouncedSearch = useRef(
     _.debounce(async (query) => {
-      if (!query || query === "") {
+      if (!query || query === "" || !token) {
         setResults(null);
         return;
       }
 
       try {
-        const res = await api.search(query as string);
+        const res = await api.search(query as string, token);
         setResults(res);
       } catch (e) {
         // TODO: Show an error
@@ -59,6 +61,10 @@ export default function Search({
       }
     }, 500)
   ).current;
+
+  if (!token) {
+    return null;
+  }
 
   function handleSearch(e: React.ChangeEvent<HTMLInputElement>) {
     setSearchText(e.target.value);
@@ -74,7 +80,7 @@ export default function Search({
         const run = async () => {
           if (addAlbum) {
             // TODO: don't add if there's an element with the same name already
-            const songs = await api.albumSongs(a.spotify_id);
+            const songs = await api.albumSongs(a.spotify_id, token);
             const newElement: PlaylistElement = { name: a.name, songs };
             addAlbum(newElement);
           }

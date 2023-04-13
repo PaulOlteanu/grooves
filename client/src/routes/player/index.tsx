@@ -11,40 +11,48 @@ import {
   SkipForward,
   VinylRecord,
 } from "@phosphor-icons/react";
-
-const albumArt =
-  "https://is1-ssl.mzstatic.com/image/thumb/Music116/v4/de/cc/ad/deccadc1-4251-ead2-6cc6-53316177a55e/067003259163.png/600x600bb.jpg";
+import { useAuth } from "../../contexts/auth";
 
 function PlaybackControls() {
+  const { token } = useAuth();
+
+  if (!token) {
+    return null;
+  }
+
   return (
     <div>
       <button
         className="w-1/5"
-        onClick={() => void api.sendPlayerCommand({ type: "prev_element" })}
+        onClick={() =>
+          void api.sendPlayerCommand({ type: "prev_element" }, token)
+        }
       >
         <ArrowBendDownLeft height={32} width={32} className="mx-auto" />
       </button>
       <button
         className="w-1/5"
-        onClick={() => void api.sendPlayerCommand({ type: "prev_song" })}
+        onClick={() => void api.sendPlayerCommand({ type: "prev_song" }, token)}
       >
         <SkipBack height={32} width={32} className="mx-auto" />
       </button>
       <button
         className="w-1/5"
-        onClick={() => void api.sendPlayerCommand({ type: "pause" })}
+        onClick={() => void api.sendPlayerCommand({ type: "pause" }, token)}
       >
         <Pause height={32} width={32} className="mx-auto" />
       </button>
       <button
         className="w-1/5"
-        onClick={() => void api.sendPlayerCommand({ type: "next_song" })}
+        onClick={() => void api.sendPlayerCommand({ type: "next_song" }, token)}
       >
         <SkipForward height={32} width={32} className="mx-auto" />
       </button>
       <button
         className="w-1/5"
-        onClick={() => void api.sendPlayerCommand({ type: "next_element" })}
+        onClick={() =>
+          void api.sendPlayerCommand({ type: "next_element" }, token)
+        }
       >
         <ArrowBendDownRight height={32} width={32} className="mx-auto" />
       </button>
@@ -72,6 +80,7 @@ function isPlaybackInfo(val: unknown): val is PlaybackInfo {
 }
 
 export default function Player() {
+  // TODO: Not hardcode this
   const { sendMessage, lastJsonMessage } = useWebSocket(
     "ws://localhost:4000/player"
   );
@@ -88,9 +97,7 @@ export default function Player() {
       return;
     }
 
-    console.log(lastJsonMessage);
     if (isPlaybackInfo(lastJsonMessage)) {
-      console.log("Setting playback info");
       setPlaybackInfo(lastJsonMessage);
     }
   }, [lastJsonMessage, setPlaybackInfo]);

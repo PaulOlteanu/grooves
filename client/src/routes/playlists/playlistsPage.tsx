@@ -1,17 +1,9 @@
-import { useQuery } from "react-query";
 import { Outlet } from "react-router-dom";
-import api from "../../api";
 import PlaylistSelector from "../../components/playlistSelector";
-import { Playlist } from "../../types";
+import usePlaylists from "../../hooks/usePlaylists";
 
 export default function PlaylistsPage() {
-  const {
-    isLoading,
-    isError,
-    data: playlists,
-  } = useQuery("playlists", async () => await api.getPlaylists(), {
-    retry: false,
-  });
+  const { playlists } = usePlaylists();
 
   if (playlists) {
     return (

@@ -1,30 +1,14 @@
 import _ from "lodash";
 import { Plus, X } from "@phosphor-icons/react";
 import { useState } from "react";
-import { useMutation, useQueryClient } from "react-query";
 import { NavLink } from "react-router-dom";
-import api from "../api";
 import usePlaylists from "../hooks/usePlaylists";
 import type { Playlist as PlaylistT } from "../types";
+import { useAuth } from "../contexts/auth";
+import usePlaylist from "../hooks/usePlaylist";
 
 function Playlist({ playlist }: { playlist: PlaylistT }) {
-  const queryClient = useQueryClient();
-  const deletePlaylistMutation = useMutation(
-    (playlist: PlaylistT) => {
-      void api.deletePlaylist(playlist.id);
-      return new Promise<number>((resolve) => resolve(playlist.id));
-    },
-    {
-      onSuccess: (playlist_id) => {
-        void queryClient.invalidateQueries({
-          queryKey: "playlists",
-        });
-        void queryClient.invalidateQueries({
-          queryKey: ["playlist", playlist_id],
-        });
-      },
-    }
-  );
+  const { deletePlaylistMutation } = usePlaylist(playlist.id);
 
   // TODO: If active and delete is pressed, redirect to /playlists
   return (
@@ -65,7 +49,12 @@ export default function PlaylistSelector({
 }) {
   const [searchFilter, setSearchFilter] = useState("");
   const [addName, setAddName] = useState("");
+  const { token } = useAuth();
   const { createPlaylistMutation } = usePlaylists();
+
+  if (!token) {
+    return null;
+  }
 
   const filtered = _.pickBy(playlists, (playlist) =>
     playlist.name.toLowerCase().includes(searchFilter.toLowerCase())
