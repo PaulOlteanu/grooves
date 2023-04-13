@@ -1,14 +1,12 @@
-use std::collections::HashMap;
 use std::sync::Arc;
 
+use grooves_player::manager::PlayerManager;
 use sea_orm::{Database, DatabaseConnection};
 use state::State;
-use tokio::sync::Mutex;
 
 mod error;
 mod extractors;
 mod middleware;
-mod player_connection;
 mod routes;
 mod state;
 mod util;
@@ -34,14 +32,17 @@ async fn main() {
 
     let database_url = std::env::var("DATABASE_URL").expect("DATABASE_URL must be set");
 
-    let db: DatabaseConnection = Database::connect(database_url)
+    let db: DatabaseConnection = Database::connect(&database_url)
+        .await
+        .expect("couldn't connect to database");
+
+    let player_db_pool: DatabaseConnection = Database::connect(&database_url)
         .await
         .expect("couldn't connect to database");
 
     let state = Arc::new(State {
         db,
-        players: Mutex::new(HashMap::new()),
-        awaiting_player: std::sync::Mutex::new(HashMap::new()),
+        player_manager: PlayerManager::new(player_db_pool),
     });
 
     let router = routes::router(state.clone()).with_state(state);

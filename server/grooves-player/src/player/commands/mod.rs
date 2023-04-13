@@ -1,19 +1,15 @@
 // TODO: Command to change device id?
 
-use grooves_entity::playlist;
 use serde::{Deserialize, Serialize};
 
-#[derive(Clone, Debug, Serialize, Deserialize)]
-pub struct PlayData {
-    pub playlist: playlist::Model,
-    pub element_index: Option<usize>,
-    pub song_index: Option<usize>,
-}
-
-#[derive(Clone, Debug, Serialize, Deserialize)]
+#[derive(Clone, Copy, Debug, Serialize, Deserialize)]
 #[serde(tag = "type", rename_all = "snake_case")]
 pub enum Command {
-    Play(PlayData),
+    Play {
+        playlist_id: i32,
+        element_index: Option<usize>,
+        song_index: Option<usize>,
+    },
     Pause,
     Resume,
     NextSong,

@@ -6,6 +6,7 @@ edition = "2021"
 [dependencies]
 anyhow = "1.0"
 chrono = "0.4"
+futures = "0.3"
 itertools = "0.10"
 grooves-entity = { path = "../grooves-entity" }
 rand = "0.8"
