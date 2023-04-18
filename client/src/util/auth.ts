@@ -16,7 +16,6 @@ async function generateCodeChallenge(code_verifier: string) {
 }
 
 const clientId = "1ef695e7fecc4086a26b8cd329e477dc";
-const redirectUri = "http://localhost:5173/callback";
 const scopes =
   "user-read-currently-playing user-modify-playback-state user-read-playback-state playlist-read-private user-read-private";
 
@@ -29,7 +28,7 @@ export async function getSpotifyRequestUrl() {
   const params = new URLSearchParams({
     client_id: clientId,
     response_type: "code",
-    redirect_uri: redirectUri,
+    redirect_uri: `${import.meta.env.VITE_FRONTEND_URL}/callback`,
     code_challenge_method: "S256",
     code_challenge,
     state,

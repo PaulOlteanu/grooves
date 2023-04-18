@@ -1,6 +1,5 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { API_URL } from "../constants";
 import { useAuth } from "../contexts/auth";
 
 enum LoginState {
@@ -11,25 +10,22 @@ enum LoginState {
 
 export default function LoginCallback() {
   const navigate = useNavigate();
-
   const { setToken } = useAuth();
-
-  const url = new URL(window.location.href);
-  const params = new URLSearchParams(url.search);
-  const code = params.get("code");
-
   const [loginState, setLoginState] = useState(LoginState.InProgress);
 
   const failLogin = () => setLoginState(LoginState.Failed);
 
   useEffect(() => {
+    const url = new URL(window.location.href);
+    const params = new URLSearchParams(url.search);
+    const code = params.get("code");
+
     if (!code) {
       failLogin();
       return;
     }
 
     const clientId = "1ef695e7fecc4086a26b8cd329e477dc";
-    const redirectUri = "http://localhost:5173/callback";
 
     async function finishAuth(codeVerifier: string) {
       if (!code) {
@@ -45,7 +41,7 @@ export default function LoginCallback() {
             client_id: clientId,
             grant_type: "authorization_code",
             code,
-            redirect_uri: redirectUri,
+            redirect_uri: `${import.meta.env.VITE_FRONTEND_URL}/callback`,
             code_verifier: codeVerifier,
           }),
         }
@@ -68,7 +64,7 @@ export default function LoginCallback() {
         return;
       }
 
-      const apiResponse = await fetch(API_URL + "/auth", {
+      const apiResponse = await fetch(import.meta.env.VITE_API_URL + "/auth", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -97,16 +93,17 @@ export default function LoginCallback() {
     }
 
     const codeVerifier = localStorage.getItem("codeVerifier");
+    localStorage.removeItem("state");
+    localStorage.removeItem("codeVerifier");
 
-    // TODO: Need to clear verifier and state
     if (codeVerifier) {
       void finishAuth(codeVerifier);
     } else {
-      setLoginState(LoginState.Failed);
+      failLogin();
     }
-  }, [code, navigate, setToken]);
+  }, [navigate, setToken]);
 
-  let displayText;
+  let displayText = "";
   switch (loginState) {
     case LoginState.InProgress:
       displayText = "Login In Progress";
@@ -114,10 +111,6 @@ export default function LoginCallback() {
 
     case LoginState.Failed:
       displayText = "Login Failed D:";
-      break;
-
-    default:
-      displayText = "";
       break;
   }
 

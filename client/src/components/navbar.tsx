@@ -1,14 +1,16 @@
+import { useQueryClient } from "react-query";
 import { NavLink, Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../contexts/auth";
 
 function LogoutButton() {
   const navigate = useNavigate();
 
-  const { setToken } = useAuth();
+  const { clearToken } = useAuth();
+  const queryClient = useQueryClient();
 
   function handleLogout() {
-    localStorage.clear();
-    setToken(null);
+    clearToken();
+    queryClient.removeQueries();
     navigate("/");
   }
 

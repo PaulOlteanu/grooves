@@ -1,7 +1,7 @@
 import _ from "lodash";
 import { Plus } from "@phosphor-icons/react";
 import { useRef, useState } from "react";
-import api, { SearchResults } from "../api";
+import { SearchResults } from "../api";
 import { PlaylistElement } from "../types";
 import { useAuth } from "../contexts/auth";
 
@@ -43,17 +43,17 @@ export default function Search({
 }) {
   const [searchText, setSearchText] = useState("");
   const [results, setResults] = useState<SearchResults | null>(null);
-  const { token } = useAuth();
+  const { apiClient } = useAuth();
 
   const debouncedSearch = useRef(
     _.debounce(async (query) => {
-      if (!query || query === "" || !token) {
+      if (!query || query === "" || !apiClient) {
         setResults(null);
         return;
       }
 
       try {
-        const res = await api.search(query as string, token);
+        const res = await apiClient.search(query as string);
         setResults(res);
       } catch (e) {
         // TODO: Show an error
@@ -62,7 +62,7 @@ export default function Search({
     }, 500)
   ).current;
 
-  if (!token) {
+  if (!apiClient) {
     return null;
   }
 
@@ -80,7 +80,7 @@ export default function Search({
         const run = async () => {
           if (addAlbum) {
             // TODO: don't add if there's an element with the same name already
-            const songs = await api.albumSongs(a.spotify_id, token);
+            const songs = await apiClient.albumSongs(a.spotify_id);
             const newElement: PlaylistElement = { name: a.name, songs };
             addAlbum(newElement);
           }

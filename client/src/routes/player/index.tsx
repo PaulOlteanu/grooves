@@ -1,7 +1,5 @@
 import { useEffect, useState } from "react";
 import useWebSocket from "react-use-websocket";
-import { API_TOKEN } from "../../constants";
-import api from "../../api";
 import _ from "lodash";
 import {
   ArrowBendDownLeft,
@@ -14,9 +12,9 @@ import {
 import { useAuth } from "../../contexts/auth";
 
 function PlaybackControls() {
-  const { token } = useAuth();
+  const { apiClient } = useAuth();
 
-  if (!token) {
+  if (!apiClient) {
     return null;
   }
 
@@ -25,33 +23,33 @@ function PlaybackControls() {
       <button
         className="w-1/5"
         onClick={() =>
-          void api.sendPlayerCommand({ type: "prev_element" }, token)
+          void apiClient.sendPlayerCommand({ type: "prev_element" })
         }
       >
         <ArrowBendDownLeft height={32} width={32} className="mx-auto" />
       </button>
       <button
         className="w-1/5"
-        onClick={() => void api.sendPlayerCommand({ type: "prev_song" }, token)}
+        onClick={() => void apiClient.sendPlayerCommand({ type: "prev_song" })}
       >
         <SkipBack height={32} width={32} className="mx-auto" />
       </button>
       <button
         className="w-1/5"
-        onClick={() => void api.sendPlayerCommand({ type: "pause" }, token)}
+        onClick={() => void apiClient.sendPlayerCommand({ type: "pause" })}
       >
         <Pause height={32} width={32} className="mx-auto" />
       </button>
       <button
         className="w-1/5"
-        onClick={() => void api.sendPlayerCommand({ type: "next_song" }, token)}
+        onClick={() => void apiClient.sendPlayerCommand({ type: "next_song" })}
       >
         <SkipForward height={32} width={32} className="mx-auto" />
       </button>
       <button
         className="w-1/5"
         onClick={() =>
-          void api.sendPlayerCommand({ type: "next_element" }, token)
+          void apiClient.sendPlayerCommand({ type: "next_element" })
         }
       >
         <ArrowBendDownRight height={32} width={32} className="mx-auto" />
@@ -80,15 +78,19 @@ function isPlaybackInfo(val: unknown): val is PlaybackInfo {
 }
 
 export default function Player() {
-  // TODO: Not hardcode this
   const { sendMessage, lastJsonMessage } = useWebSocket(
-    "ws://localhost:4000/player"
+    `${import.meta.env.VITE_WS_URL}/player`
   );
+  const { token } = useAuth();
+
+  if (!token) {
+    return null;
+  }
 
   const [playerState, setPlaybackInfo] = useState<PlaybackInfo | null>(null);
 
   useEffect(() => {
-    sendMessage(API_TOKEN);
+    sendMessage(token);
   }, []);
 
   useEffect(() => {

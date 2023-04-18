@@ -66,6 +66,7 @@ export default function PlaylistSelector({
     return <Playlist key={p.id} playlist={p} />;
   });
 
+  // TODO: When creating a new playlist, redirect to that playlist
   function addPlaylist(name: string) {
     if (!name) {
       return;

@@ -1,78 +1,15 @@
-import axios from "axios";
-import { API_URL } from "./constants";
+import axios, { AxiosInstance } from "axios";
 import { ApiToken, Playlist, Song } from "./types";
 
 export type ApiError = {
   message: string;
 };
 
-export type ApiResponse<T> = T | ApiError;
-
-function isApiError(x: unknown): x is ApiError {
+export function isApiError(x: unknown): x is ApiError {
   return (x as ApiError).message !== undefined;
 }
 
-async function getPlaylists(token: ApiToken) {
-  console.log("Getting playlists with token: " + token);
-  const { data } = await axios.get<Playlist[]>(`${API_URL}/playlists`, {
-    headers: {
-      Authorization: `Bearer ${token}`,
-    },
-  });
-
-  return data;
-}
-
-// TODO: Make this take a playlist
-async function createPlaylist(name: string, token: ApiToken) {
-  const { data } = await axios.post<Playlist>(
-    `${API_URL}/playlists`,
-    { name, elements: [] },
-    {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    }
-  );
-
-  return data;
-}
-
-async function getPlaylist(playlistId: number, token: ApiToken) {
-  console.log("Getting playlist with token: " + token);
-  const { data } = await axios.get<Playlist>(
-    `${API_URL}/playlists/${playlistId}`,
-    {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    }
-  );
-
-  return data;
-}
-
-async function updatePlaylist(playlist: Playlist, token: ApiToken) {
-  const { data } = await axios.put<Playlist>(
-    `${API_URL}/playlists/${playlist.id}`,
-    playlist,
-    {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    }
-  );
-
-  return data;
-}
-
-async function deletePlaylist(playlistId: number, token: ApiToken) {
-  return axios.delete(`${API_URL}/playlists/${playlistId}`, {
-    headers: {
-      Authorization: `Bearer ${token}`,
-    },
-  });
-}
+export type ApiResponse<T> = T | ApiError;
 
 export type SongSearchResult = {
   name: string;
@@ -92,50 +29,70 @@ export type SearchResults = {
   albums: AlbumSearchResult[];
 };
 
-async function search(query: string, token: ApiToken) {
-  const { data } = await axios.get<SearchResults>(
-    `${API_URL}/spotify/search?q=${query}`,
-    {
+export default class ApiClient {
+  axiosClient: AxiosInstance;
+
+  constructor(token: ApiToken) {
+    this.axiosClient = axios.create({
+      baseURL: import.meta.env.VITE_API_URL,
       headers: {
         Authorization: `Bearer ${token}`,
       },
-    }
-  );
+    });
+  }
 
-  return data;
+  async getPlaylists() {
+    const { data } = await this.axiosClient.get<Playlist[]>("/playlists");
+    return data;
+  }
+
+  // TODO: Make this take a playlist
+  async createPlaylist(name: string) {
+    const { data } = await this.axiosClient.post<Playlist>("/playlists", {
+      name,
+      elements: [],
+    });
+
+    return data;
+  }
+
+  async getPlaylist(playlistId: number) {
+    const { data } = await this.axiosClient.get<Playlist>(
+      `/playlists/${playlistId}`
+    );
+    return data;
+  }
+
+  async updatePlaylist(playlist: Playlist) {
+    const { data } = await this.axiosClient.put<Playlist>(
+      `/playlists/${playlist.id}`,
+      playlist
+    );
+
+    return data;
+  }
+
+  async deletePlaylist(playlistId: number) {
+    return this.axiosClient.delete(`/playlists/${playlistId}`, {});
+  }
+
+  async search(query: string) {
+    const { data } = await this.axiosClient.get<SearchResults>(
+      `/spotify/search?q=${query}`
+    );
+
+    return data;
+  }
+
+  async albumSongs(albumId: string) {
+    const { data } = await this.axiosClient.get<Song[]>(
+      `/spotify/album_songs/${albumId}`
+    );
+
+    return data;
+  }
+
+  async sendPlayerCommand(command: object) {
+    await this.axiosClient.post("/player", command);
+  }
 }
-
-async function albumSongs(albumId: string, token: ApiToken) {
-  const { data } = await axios.get<Song[]>(
-    `${API_URL}/spotify/album_songs/${albumId}`,
-    {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    }
-  );
-
-  return data;
-}
-
-async function sendPlayerCommand(command: object, token: ApiToken) {
-  const { data } = await axios.post(`${API_URL}/player`, command, {
-    headers: {
-      Authorization: `Bearer ${token}`,
-    },
-  });
-
-  return data;
-}
-
-export default {
-  isApiError,
-  getPlaylists,
-  createPlaylist,
-  getPlaylist,
-  updatePlaylist,
-  deletePlaylist,
-  search,
-  albumSongs,
-  sendPlayerCommand,
-};

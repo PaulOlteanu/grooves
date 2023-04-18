@@ -1,10 +1,9 @@
 import { useParams } from "react-router-dom";
-import api from "../../api";
 import { default as PlaylistComponent } from "../../components/playlist";
 import Search from "../../components/search";
 import { useAuth } from "../../contexts/auth";
 import usePlaylist from "../../hooks/usePlaylist";
-import { ApiToken, Playlist, PlaylistElement } from "../../types";
+import { PlaylistElement } from "../../types";
 import { addElement } from "../../util/playlists";
 
 function Page({ playlistId }: { playlistId: number }) {

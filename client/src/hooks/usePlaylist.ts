@@ -1,11 +1,10 @@
 import { useMutation, useQuery, useQueryClient } from "react-query";
-import api from "../api";
 import { useAuth } from "../contexts/auth";
 import { Playlist } from "../types";
 
 export default function usePlaylist(id: number) {
   const queryClient = useQueryClient();
-  const { token } = useAuth();
+  const { apiClient } = useAuth();
 
   const {
     isLoading,
@@ -14,10 +13,10 @@ export default function usePlaylist(id: number) {
   } = useQuery(
     ["playlist", id],
     async () => {
-      if (!token) {
+      if (!apiClient) {
         return Promise.reject();
       } else {
-        return await api.getPlaylist(id, token);
+        return await apiClient.getPlaylist(id);
       }
     },
     { retry: false }
@@ -25,10 +24,10 @@ export default function usePlaylist(id: number) {
 
   const updatePlaylistMutation = useMutation(
     (playlist: Playlist) => {
-      if (!token) {
+      if (!apiClient) {
         return Promise.reject();
       } else {
-        return api.updatePlaylist(playlist, token);
+        return apiClient.updatePlaylist(playlist);
       }
     },
     {
@@ -42,10 +41,10 @@ export default function usePlaylist(id: number) {
 
   const deletePlaylistMutation = useMutation(
     (playlist: Playlist) => {
-      if (!token) {
+      if (!apiClient) {
         return Promise.reject();
       } else {
-        void api.deletePlaylist(playlist.id, token);
+        void apiClient.deletePlaylist(playlist.id);
         return new Promise<number>((resolve) => resolve(playlist.id));
       }
     },

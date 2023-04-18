@@ -1,10 +1,9 @@
 import { useMutation, useQuery, useQueryClient } from "react-query";
-import api from "../api";
 import { useAuth } from "../contexts/auth";
 
 export default function usePlaylists() {
   const queryClient = useQueryClient();
-  const { token } = useAuth();
+  const { apiClient } = useAuth();
 
   const {
     isLoading,
@@ -13,10 +12,10 @@ export default function usePlaylists() {
   } = useQuery(
     "playlists",
     async () => {
-      if (!token) {
+      if (!apiClient) {
         return Promise.reject();
       } else {
-        return await api.getPlaylists(token);
+        return await apiClient.getPlaylists();
       }
     },
     { retry: false }
@@ -24,10 +23,10 @@ export default function usePlaylists() {
 
   const createPlaylistMutation = useMutation(
     (name: string) => {
-      if (!token) {
+      if (!apiClient) {
         return Promise.reject();
       } else {
-        return api.createPlaylist(name, token);
+        return apiClient.createPlaylist(name);
       }
     },
     {
