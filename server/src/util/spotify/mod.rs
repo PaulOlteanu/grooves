@@ -15,8 +15,10 @@ pub fn init_client() -> AuthCodeSpotify {
         "user-read-private"
     );
 
-    let mut oauth = OAuth::default();
-    oauth.scopes = scopes.clone();
+    let oauth = OAuth {
+        scopes,
+        ..Default::default()
+    };
 
     let config: Config = Config {
         token_refreshing: true,
@@ -37,8 +39,10 @@ pub fn client_with_token(mut token: Token) -> AuthCodeSpotify {
         "user-read-private"
     );
 
-    let mut oauth = OAuth::default();
-    oauth.scopes = scopes.clone();
+    let oauth = OAuth {
+        scopes: scopes.clone(),
+        ..Default::default()
+    };
 
     let config: Config = Config {
         token_refreshing: true,
