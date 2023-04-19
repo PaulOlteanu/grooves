@@ -1,0 +1,35 @@
+# fly.toml file generated for grooves-server on 2023-04-18T17:17:51-04:00
+
+app = "grooves-server"
+kill_signal = "SIGINT"
+kill_timeout = 5
+mounts = []
+primary_region = "yyz"
+processes = []
+
+[build]
+  build-target = "runner"
+
+[env]
+  RUST_LOG="error"
+  FRONTEND_URL="https://grooves.paulolteanu.ca"
+  GROOVES_PORT="4000"
+  RSPOTIFY_CLIENT_ID="1ef695e7fecc4086a26b8cd329e477dc"
+
+[[services]]
+  internal_port = 4000
+  processes = ["app"]
+  protocol = "tcp"
+  [services.concurrency]
+    hard_limit = 25
+    soft_limit = 20
+    type = "connections"
+
+  [[services.ports]]
+    force_https = true
+    handlers = ["http"]
+    port = 80
+
+  [[services.ports]]
+    handlers = ["tls", "http"]
+    port = 443

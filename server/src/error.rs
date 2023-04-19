@@ -1,11 +1,10 @@
-use std::sync::PoisonError;
-
 use axum::http::StatusCode;
 use axum::response::IntoResponse;
 use rspotify::model::IdError;
 use rspotify::ClientError;
 use tokio::sync::mpsc::error::SendError;
 
+// TODO: Not have every error be an OtherError
 #[derive(Debug)]
 pub enum GroovesError {
     NotFound,
@@ -42,12 +41,6 @@ impl From<serde_json::Error> for GroovesError {
 impl From<axum::Error> for GroovesError {
     fn from(value: axum::Error) -> Self {
         Self::OtherError(value.to_string())
-    }
-}
-
-impl<T> From<PoisonError<T>> for GroovesError {
-    fn from(_value: PoisonError<T>) -> Self {
-        Self::OtherError("Tried to lock poisoned mutex".to_string())
     }
 }
 

@@ -1,4 +1,4 @@
-use axum::http::Method;
+use axum::http::{HeaderValue, Method};
 use axum::routing::get;
 use axum::Router;
 use tower_http::cors::CorsLayer;
@@ -12,15 +12,22 @@ mod playlists;
 mod spotify;
 
 pub fn router(state: AppState) -> Router<AppState> {
-    let origins = [
-        "http://localhost:5173".parse().unwrap(),
-        "https://localhost:5173".parse().unwrap(),
-    ];
+    let frontend_url = std::env::var("FRONTEND_URL").expect("FRONTEND_URL must be set");
 
     let cors = CorsLayer::new()
-        .allow_methods([Method::GET, Method::POST, Method::PUT, Method::DELETE])
+        .allow_methods([
+            Method::GET,
+            Method::POST,
+            Method::PUT,
+            Method::DELETE,
+            Method::OPTIONS,
+        ])
         .allow_headers(tower_http::cors::Any)
-        .allow_origin(origins);
+        .allow_origin(
+            frontend_url
+                .parse::<HeaderValue>()
+                .expect("Failed to get frontend url"),
+        );
 
     Router::<AppState>::new()
         .route("/", get(|| async { "Hello, World!" }))

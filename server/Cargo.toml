@@ -12,10 +12,10 @@ dotenvy = "0.15"
 futures = "0.3"
 if_chain = "1.0"
 grooves-entity = { path = "grooves-entity" }
+grooves-migration = { path = "grooves-migration" }
 grooves-player = { path = "grooves-player" }
 rand = "0.8"
-# rspotify = "0.11"
-rspotify = { path = "../../rspotify" }
+rspotify = { git = "https://github.com/ramsayleung/rspotify.git", branch = "ramsay_fix_serialize_error" }
 sea-orm = { version = "0.11", features = [
     "sqlx-postgres",
     "runtime-tokio-rustls",

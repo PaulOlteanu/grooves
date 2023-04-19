@@ -43,11 +43,12 @@ async fn handle_connect(mut socket: WebSocket, state: AppState) {
         // Loop and wait for player state updates, begin sending them
         while receiver.changed().await.is_ok() {
             let m = serde_json::to_string(&*receiver.borrow());
+
             if let Ok(msg) = m {
                 if socket.send(Message::Text(msg)).await.is_err() {
                     return;
                 }
-            } else if socket.send(Message::Text("".to_string())).await.is_err() {
+            } else if socket.send(Message::Binary(Vec::new())).await.is_err() {
                 return;
             };
         }
