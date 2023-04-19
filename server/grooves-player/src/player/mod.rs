@@ -236,9 +236,9 @@ impl Player {
         // If the playback stopped at the first song of the element, with 0 progress, we need to play the next element
         if !playback.is_playing {
             if let Some(prog) = playback.progress {
-                if let Some(PlayableItem::Track(song)) = playback.item {
-                    if let Some(id) = song.id {
-                        if current_element.songs[0].spotify_id == id && prog == Duration::zero() {
+                if let Some(PlayableItem::Track(song)) = &playback.item {
+                    if let Some(id) = &song.id {
+                        if current_element.songs[0].spotify_id == *id && prog == Duration::zero() {
                             playback_state.increment_current();
                             let element = playback_state.get_current_element();
                             play_element(&self.spotify_client, element).await?;
@@ -248,9 +248,6 @@ impl Player {
                     }
                 }
             }
-
-            // TODO: begin pause watching
-            return Err(anyhow!("paused"));
         }
 
         let playing_item = if let Some(item) = playback.item {
