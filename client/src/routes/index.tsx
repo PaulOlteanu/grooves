@@ -16,16 +16,9 @@ function LoggedOutPage() {
 
   useEffect(() => {
     if (!token) {
-      const getUrl = async () => {
-        const { codeVerifier, state, requestUrl } =
-          await getSpotifyRequestUrl();
-
-        localStorage.setItem("codeVerifier", codeVerifier);
-        localStorage.setItem("state", state);
-        setLoginLink(requestUrl);
-      };
-
-      void getUrl();
+      const { state, requestUrl } = getSpotifyRequestUrl();
+      localStorage.setItem("state", state);
+      setLoginLink(requestUrl);
     }
   }, [token]);
 

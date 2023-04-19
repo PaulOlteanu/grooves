@@ -79,7 +79,13 @@ function isPlaybackInfo(val: unknown): val is PlaybackInfo {
 
 export default function Player() {
   const { sendMessage, lastJsonMessage } = useWebSocket(
-    `${import.meta.env.VITE_WS_URL}/player`
+    `${import.meta.env.VITE_WS_URL}/player`,
+    {
+      shouldReconnect() {
+        return true;
+      },
+      retryOnError: true,
+    }
   );
   const { token } = useAuth();
 

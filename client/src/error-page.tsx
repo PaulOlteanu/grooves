@@ -1,5 +1,5 @@
 import { isRouteErrorResponse, useRouteError } from "react-router-dom";
-import api from "./api";
+import { isApiError } from "./api";
 
 export default function ErrorPage() {
   const error = useRouteError();
@@ -15,7 +15,7 @@ export default function ErrorPage() {
         </p>
       </div>
     );
-  } else if (api.isApiError(error)) {
+  } else if (isApiError(error)) {
     return (
       <div id="error-page" className="h-screen text-white bg-neutral-800">
         <h1>Error</h1>
