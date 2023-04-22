@@ -57,11 +57,15 @@ impl Deref for Elements {
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize, FromJsonQueryResult)]
 pub struct PlaylistElement {
     pub name: String,
+    pub image_url: String,
+    pub artists: String,
     pub songs: Vec<Song>,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize, FromJsonQueryResult)]
 pub struct Song {
     pub name: String,
+    pub image_url: String,
+    pub artists: String,
     pub spotify_id: TrackId<'static>,
 }

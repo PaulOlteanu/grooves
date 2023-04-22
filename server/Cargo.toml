@@ -6,14 +6,16 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
+async-stream = "0.3"
 axum = { version = "0.6", features = ["default", "ws"] }
 axum-macros = "0.3.4"
 dotenvy = "0.15"
 futures = "0.3"
-if_chain = "1.0"
+futures-util = "0.3"
 grooves-entity = { path = "grooves-entity" }
 grooves-migration = { path = "grooves-migration" }
 grooves-player = { path = "grooves-player" }
+itertools = "0.10"
 rand = "0.8"
 rspotify = { git = "https://github.com/ramsayleung/rspotify.git", branch = "ramsay_fix_serialize_error" }
 sea-orm = { version = "0.11", features = [
@@ -26,6 +28,7 @@ sea-orm = { version = "0.11", features = [
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0.68"
 tokio = { version = "1.0", features = ["full"] }
+tokio-stream = "0.1"
 tower-http = { version = "0.3.0", features = ["trace", "cors"] }
 tracing = "0.1"
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }

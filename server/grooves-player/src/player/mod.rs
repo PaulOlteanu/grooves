@@ -1,11 +1,10 @@
 use anyhow::{anyhow, Context};
 use chrono::Duration;
 use grooves_entity::playlist::{self, Entity as Playlist, PlaylistElement, Song};
-use itertools::Itertools;
 use rand::seq::SliceRandom;
 use rand::thread_rng;
 use rspotify::model::{PlayableItem, RepeatState};
-use rspotify::prelude::{BaseClient, OAuthClient};
+use rspotify::prelude::OAuthClient;
 use rspotify::{AuthCodeSpotify, ClientResult};
 use sea_orm::{DatabaseConnection, EntityTrait};
 use serde::{Deserialize, Serialize};
@@ -26,7 +25,7 @@ pub struct PlaybackInfo {
     image_url: String,
     song_name: String,
     album_name: String,
-    artist_name: String,
+    artists: String,
     playback_status: PlaybackStatus,
 }
 
@@ -73,30 +72,17 @@ impl PlayerState {
         self.current_song = 0;
     }
 
-    async fn get_playback_info(
-        &self,
-        client: &AuthCodeSpotify,
-    ) -> Result<PlaybackInfo, anyhow::Error> {
+    fn get_playback_info(&self) -> PlaybackInfo {
         let element = self.get_current_element();
         let song = &element.songs[self.current_song];
 
-        let full_song = client.track(song.spotify_id.clone()).await?;
-        let image = full_song.album.images.iter().max_by_key(|i| i.width);
-        let image_url = if let Some(image) = image {
-            image.url.clone()
-        } else {
-            "".to_string()
-        };
-
-        let artist = full_song.artists.iter().map(|a| &a.name).join(", ");
-
-        Ok(PlaybackInfo {
-            image_url,
+        PlaybackInfo {
+            image_url: song.image_url.clone(),
             song_name: song.name.clone(),
             album_name: element.name.clone(),
-            artist_name: artist,
-            playback_status: PlaybackStatus::Paused,
-        })
+            artists: song.artists.clone(),
+            playback_status: PlaybackStatus::Playing,
+        }
     }
 }
 
@@ -106,6 +92,11 @@ pub struct Player {
     receiver: mpsc::UnboundedReceiver<Command>,
     playback_state: Option<PlayerState>,
     db: DatabaseConnection,
+}
+
+enum TickResult {
+    Changed,
+    Unchanged,
 }
 
 // TODO: Clean this up
@@ -130,88 +121,27 @@ impl Player {
 
         loop {
             if let Ok(command) = self.receiver.try_recv() {
-                match command {
-                    Command::Play {
-                        playlist_id,
-                        element_index,
-                        ..
-                    } => {
-                        let playlist = if let Ok(Some(playlist)) =
-                            Playlist::find_by_id(playlist_id).one(&self.db).await
-                        {
-                            playlist
-                        } else {
-                            return;
-                        };
-
-                        let new_state = PlayerState {
-                            device_id: None,
-                            order: generate_order(playlist.elements.0.len(), element_index),
-                            playlist,
-                            current_element: 0,
-                            current_song: 0,
-                        };
-
-                        self.playback_state = Some(new_state);
-                        let playback_state = self.playback_state.as_ref().unwrap();
-                        let element = playback_state.get_current_element();
-
-                        let res = play_element(&self.spotify_client, element).await;
-
-                        if res.is_ok() && self.send_state().await.is_err() {
-                            return;
-                        }
-                    }
-
-                    Command::NextElement => {
-                        if let Some(playback_state) = self.playback_state.as_mut() {
-                            playback_state.increment_current();
-
-                            let element = playback_state.get_current_element();
-                            let res = play_element(&self.spotify_client, element).await;
-
-                            if res.is_ok() && self.send_state().await.is_err() {
-                                return;
-                            }
-                        } else {
-                            return;
-                        }
-                    }
-
-                    Command::PrevElement => {
-                        if let Some(playback_state) = self.playback_state.as_mut() {
-                            playback_state.decrement_current();
-
-                            let element = playback_state.get_current_element();
-                            let res = play_element(&self.spotify_client, element).await;
-
-                            if res.is_ok() && self.send_state().await.is_err() {
-                                return;
-                            }
-                        } else {
-                            return;
-                        }
-                    }
-
-                    cmd => {
-                        println!("Unimplemented command");
-                        println!("{:?}", cmd)
-                    }
+                if self.handle_command(command).await.is_err() {
+                    return;
                 }
             }
 
             if self.playback_state.is_some() {
-                if let Err(e) = self.tick().await {
+                let tick_result = self.tick().await;
+
+                if let Ok(result) = tick_result {
+                    failures = 0;
+
+                    if let TickResult::Changed = result {
+                        if self.send_state().await.is_err() {
+                            return;
+                        }
+                    }
+                } else if let Err(e) = tick_result {
                     println!("Tick errored: {:?}", e);
                     failures += 1;
-                } else {
-                    failures = 0;
-                };
+                }
             };
-
-            if self.send_state().await.is_err() {
-                return;
-            }
 
             if failures >= 5 {
                 println!("Player exiting");
@@ -222,7 +152,7 @@ impl Player {
         }
     }
 
-    async fn tick(&mut self) -> Result<(), anyhow::Error> {
+    async fn tick(&mut self) -> Result<TickResult, anyhow::Error> {
         // Get spotify playback state
         let playback = self
             .spotify_client
@@ -243,7 +173,7 @@ impl Player {
                             let element = playback_state.get_current_element();
                             play_element(&self.spotify_client, element).await?;
 
-                            return Ok(());
+                            return Ok(TickResult::Changed);
                         }
                     }
                 }
@@ -280,11 +210,84 @@ impl Player {
             if idx != playback_state.current_song {
                 playback_state.current_song = idx;
 
-                return Ok(());
+                return Ok(TickResult::Changed);
             }
         } else {
             // The current element doesn't contain the currently playing song
             return Err(anyhow!("unexpected item playing"));
+        }
+
+        Ok(TickResult::Unchanged)
+    }
+
+    async fn handle_command(&mut self, command: Command) -> Result<(), ()> {
+        match command {
+            Command::Play {
+                playlist_id,
+                element_index,
+                ..
+            } => {
+                let playlist = if let Ok(Some(playlist)) =
+                    Playlist::find_by_id(playlist_id).one(&self.db).await
+                {
+                    playlist
+                } else {
+                    return Err(());
+                };
+
+                let new_state = PlayerState {
+                    device_id: None,
+                    order: generate_order(playlist.elements.0.len(), element_index),
+                    playlist,
+                    current_element: 0,
+                    current_song: 0,
+                };
+
+                self.playback_state = Some(new_state);
+                let playback_state = self.playback_state.as_ref().unwrap();
+                let element = playback_state.get_current_element();
+
+                let res = play_element(&self.spotify_client, element).await;
+
+                if res.is_ok() && self.send_state().await.is_err() {
+                    return Err(());
+                }
+            }
+
+            Command::NextElement => {
+                if let Some(playback_state) = self.playback_state.as_mut() {
+                    playback_state.increment_current();
+
+                    let element = playback_state.get_current_element();
+                    let res = play_element(&self.spotify_client, element).await;
+
+                    if res.is_ok() && self.send_state().await.is_err() {
+                        return Err(());
+                    }
+                } else {
+                    return Err(());
+                }
+            }
+
+            Command::PrevElement => {
+                if let Some(playback_state) = self.playback_state.as_mut() {
+                    playback_state.decrement_current();
+
+                    let element = playback_state.get_current_element();
+                    let res = play_element(&self.spotify_client, element).await;
+
+                    if res.is_ok() && self.send_state().await.is_err() {
+                        return Err(());
+                    }
+                } else {
+                    return Err(());
+                }
+            }
+
+            cmd => {
+                println!("Unimplemented command");
+                println!("{:?}", cmd);
+            }
         }
 
         Ok(())
@@ -292,11 +295,9 @@ impl Player {
 
     async fn send_state(&self) -> Result<(), ()> {
         if let Some(playback_state) = &self.playback_state {
-            if let Ok(playback_info) = playback_state.get_playback_info(&self.spotify_client).await
-            {
-                if self.sender.send(Some(playback_info)).is_ok() {
-                    return Ok(());
-                }
+            let playback_info = playback_state.get_playback_info();
+            if self.sender.send(Some(playback_info)).is_ok() {
+                return Ok(());
             }
         }
 

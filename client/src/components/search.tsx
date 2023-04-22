@@ -80,9 +80,8 @@ export default function Search({
         const run = async () => {
           if (addAlbum) {
             // TODO: don't add if there's an element with the same name already
-            const songs = await apiClient.albumSongs(a.spotify_id);
-            const newElement: PlaylistElement = { name: a.name, songs };
-            addAlbum(newElement);
+            const element = await apiClient.albumToElement(a.spotify_id);
+            addAlbum(element);
           }
         };
 

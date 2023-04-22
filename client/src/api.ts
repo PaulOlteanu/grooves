@@ -1,5 +1,5 @@
 import axios, { AxiosInstance } from "axios";
-import { ApiToken, Playlist, Song } from "./types";
+import { ApiToken, Playlist, PlaylistElement, Song } from "./types";
 
 export type ApiError = {
   message: string;
@@ -84,9 +84,9 @@ export default class ApiClient {
     return data;
   }
 
-  async albumSongs(albumId: string) {
-    const { data } = await this.axiosClient.get<Song[]>(
-      `/spotify/album_songs/${albumId}`
+  async albumToElement(albumId: string) {
+    const { data } = await this.axiosClient.get<PlaylistElement>(
+      `/spotify/album_to_element/${albumId}`
     );
 
     return data;
@@ -94,5 +94,10 @@ export default class ApiClient {
 
   async sendPlayerCommand(command: object) {
     await this.axiosClient.post("/player", command);
+  }
+
+  async getSseToken () {
+    const { data } = await this.axiosClient.get<string>("/player/sse_token");
+    return data;
   }
 }

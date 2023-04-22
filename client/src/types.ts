@@ -2,11 +2,15 @@ export type ApiToken = string;
 
 export type Song = {
   name: string;
+  image_url: string;
+  artists: string;
   spotify_id: string;
 };
 
 export type PlaylistElement = {
   name: string;
+  image_url: string;
+  artists: string;
   songs: Song[];
 };
 

@@ -54,9 +54,6 @@ function LoggedInPage() {
       <p>A few limitations that will be fixed soon&trade;:</p>
       <ul className="list-disc pl-5">
         <li>
-          If you pause your Spotify, Grooves will stop controlling playback
-        </li>
-        <li>
           There's no playlist renaming or re-ordering, you can't add individual
           songs, etc.
         </li>

@@ -773,20 +773,23 @@ dependencies = [
 name = "grooves-server"
 version = "0.1.0"
 dependencies = [
+ "async-stream",
  "axum",
  "axum-macros",
  "dotenvy",
  "futures",
+ "futures-util",
  "grooves-entity",
  "grooves-migration",
  "grooves-player",
- "if_chain",
+ "itertools",
  "rand",
  "rspotify",
  "sea-orm",
  "serde",
  "serde_json",
  "tokio",
+ "tokio-stream",
  "tower-http",
  "tracing",
  "tracing-subscriber",
@@ -1005,12 +1008,6 @@ dependencies = [
  "unicode-bidi",
  "unicode-normalization",
 ]
-
-[[package]]
-name = "if_chain"
-version = "1.0.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "cb56e1aa765b4b4f3aadfab769793b7087bb03a4ea4920644a6d238e2df5b9ed"
 
 [[package]]
 name = "indexmap"

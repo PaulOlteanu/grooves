@@ -1,6 +1,7 @@
 use std::collections::HashMap;
 use std::sync::Mutex;
 
+use grooves_entity::user;
 use grooves_player::manager::PlayerManager;
 use rspotify::AuthCodeSpotify;
 use sea_orm::DatabaseConnection;
@@ -9,5 +10,5 @@ use sea_orm::DatabaseConnection;
 pub struct State {
     pub db: DatabaseConnection,
     pub player_manager: PlayerManager,
-    pub logging_in_clients: Mutex<HashMap<String, AuthCodeSpotify>>,
+    pub sse_tokens: Mutex<HashMap<String, user::Model>>,
 }

@@ -60,7 +60,7 @@ function PlaybackControls() {
 
 type PlaybackInfo = {
   album_name: string;
-  artist_name: string;
+  artists: string;
   image_url: string;
   playback_status: string;
   song_name: string;
@@ -70,7 +70,7 @@ function isPlaybackInfo(val: unknown): val is PlaybackInfo {
   const v = val as PlaybackInfo;
   return (
     v.album_name !== undefined &&
-    v.artist_name !== undefined &&
+    v.artists !== undefined &&
     v.image_url !== undefined &&
     v.playback_status !== undefined &&
     v.song_name !== undefined
@@ -78,37 +78,33 @@ function isPlaybackInfo(val: unknown): val is PlaybackInfo {
 }
 
 export default function Player() {
-  const { sendMessage, lastJsonMessage } = useWebSocket(
-    `${import.meta.env.VITE_WS_URL}/player`,
-    {
-      shouldReconnect() {
-        return true;
-      },
-      retryOnError: true,
-    }
-  );
-  const { token } = useAuth();
+  const { apiClient } = useAuth();
 
-  if (!token) {
+  if (!apiClient) {
     return null;
   }
 
   const [playerState, setPlaybackInfo] = useState<PlaybackInfo | null>(null);
 
+  const setPlayerState = (data_str: any) => {
+    const data: unknown = JSON.parse(data_str as string);
+    if (data === null || isPlaybackInfo(data)) {
+      setPlaybackInfo(data);
+    }
+  };
+
   useEffect(() => {
-    sendMessage(token);
+    const run = async () => {
+      const token = await apiClient.getSseToken();
+      const eventSource = new EventSource(
+        `${import.meta.env.VITE_API_URL}/player?token=${token}`
+      );
+
+      eventSource.onmessage = (e) => setPlayerState(e.data);
+    };
+
+    void run();
   }, []);
-
-  useEffect(() => {
-    if (lastJsonMessage === null || _.isEmpty(lastJsonMessage)) {
-      setPlaybackInfo(null);
-      return;
-    }
-
-    if (isPlaybackInfo(lastJsonMessage)) {
-      setPlaybackInfo(lastJsonMessage);
-    }
-  }, [lastJsonMessage, setPlaybackInfo]);
 
   if (playerState) {
     return (
@@ -121,7 +117,7 @@ export default function Player() {
           {playerState.image_url ? (
             <img
               src={playerState.image_url || undefined}
-              className="max-h-full max-w-full object-contain"
+              className="max-h-full max-w-full object-contain mh-auto"
             />
           ) : (
             <VinylRecord size="100%" />
@@ -130,7 +126,7 @@ export default function Player() {
 
         <div className="text-center mt-2">
           <p>{playerState.song_name}</p>
-          <p>{playerState.artist_name}</p>
+          <p>{playerState.artists}</p>
         </div>
 
         <div className="mt-3 w-full">

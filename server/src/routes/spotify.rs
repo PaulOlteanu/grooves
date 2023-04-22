@@ -5,9 +5,10 @@ use axum::response::IntoResponse;
 use axum::routing::get;
 use axum::{Extension, Json, Router};
 use axum_macros::debug_handler;
-use grooves_entity::playlist::Song;
+use grooves_entity::playlist::{PlaylistElement, Song};
 use grooves_entity::user;
-use rspotify::model::{AlbumId, SearchResult, SearchType, SimplifiedAlbum};
+use itertools::Itertools;
+use rspotify::model::{AlbumId, SearchResult, SearchType};
 use rspotify::prelude::{BaseClient, Id};
 use sea_orm::{ActiveModelBehavior, ActiveModelTrait, Set};
 use serde::Serialize;
@@ -20,7 +21,7 @@ use crate::{middleware, AppState};
 pub fn router(state: AppState) -> Router<AppState> {
     Router::new()
         .route("/search", get(search))
-        .route("/album_songs/:album_id", get(album_songs))
+        .route("/album_to_element/:album_id", get(album_to_element))
         .route_layer(axum::middleware::from_fn_with_state(
             state,
             middleware::auth::auth,
@@ -59,7 +60,7 @@ async fn search(
             .map(|song| SearchResponse {
                 name: song.name.clone(),
                 spotify_id: song.id.as_ref().unwrap().id().to_string(),
-                image_url: get_image_url(&song.album).unwrap_or("".to_string()),
+                image_url: get_min_image_url(&song.album.images).unwrap_or("".to_string()),
             })
             .collect()
     } else {
@@ -79,7 +80,7 @@ async fn search(
             .map(|album| SearchResponse {
                 name: album.name.clone(),
                 spotify_id: album.id.as_ref().unwrap().id().to_string(),
-                image_url: get_image_url(album).unwrap_or("".to_string()),
+                image_url: get_min_image_url(&album.images).unwrap_or("".to_string()),
             })
             .collect()
     } else {
@@ -97,12 +98,11 @@ async fn search(
 
     active_user.update(&state.db).await?;
 
-    // TODO: Store the new access token
     Ok(Json(json!({"songs": songs, "albums": albums})))
 }
 
 #[debug_handler]
-async fn album_songs(
+async fn album_to_element(
     State(state): State<AppState>,
     Extension(current_user): Extension<user::Model>,
     Path(album_id): Path<String>,
@@ -112,6 +112,8 @@ async fn album_songs(
     let client = spotify::client_with_token(token);
 
     let album = client.album(AlbumId::from_id(album_id)?).await?;
+    let image_url = get_max_image_url(&album.images).unwrap_or("".to_string());
+    let artists = album.artists.iter().map(|a| &a.name).join(", ");
 
     let songs: Vec<Song> = album
         .tracks
@@ -119,6 +121,8 @@ async fn album_songs(
         .iter()
         .map(|s| Song {
             name: s.name.clone(),
+            image_url: image_url.clone(),
+            artists: artists.clone(),
             spotify_id: s.id.as_ref().unwrap().clone(),
         })
         .collect();
@@ -132,13 +136,26 @@ async fn album_songs(
 
     active_user.update(&state.db).await?;
 
-    Ok(Json(songs))
+    let response: PlaylistElement = PlaylistElement {
+        name: album.name,
+        artists,
+        image_url,
+        songs,
+    };
+
+    Ok(Json(response))
 }
 
-fn get_image_url(album: &SimplifiedAlbum) -> Option<String> {
-    album
-        .images
+fn get_min_image_url(images: &[rspotify::model::Image]) -> Option<String> {
+    images
         .iter()
         .min_by_key(|a| a.height.unwrap_or(0))
+        .map(|img| img.url.clone())
+}
+
+fn get_max_image_url(images: &[rspotify::model::Image]) -> Option<String> {
+    images
+        .iter()
+        .max_by_key(|a| a.height.unwrap_or(0))
         .map(|img| img.url.clone())
 }

@@ -1,62 +1,84 @@
-use axum::extract::ws::{Message, WebSocket, WebSocketUpgrade};
-use axum::extract::State;
-use axum::response::IntoResponse;
+use axum::extract::{Query, State};
+use axum::response::sse::{Event, KeepAlive};
+use axum::response::{IntoResponse, Sse};
 use axum::routing::{get, post};
 use axum::{Extension, Json, Router};
 use axum_macros::debug_handler;
-use grooves_entity::session::{self, Entity as Session};
-use grooves_entity::user::{self, Entity as User};
+use grooves_entity::user;
 use grooves_player::player::commands::Command;
-use sea_orm::{ColumnTrait, DatabaseConnection, EntityTrait, QueryFilter};
+
+use futures_util::stream::Stream;
+use std::collections::HashMap;
+use std::convert::Infallible;
 
 use crate::error::{GroovesError, GroovesResult};
-use crate::{middleware, AppState};
+use crate::{middleware, util, AppState};
 
+#[rustfmt::skip]
 pub fn router(state: AppState) -> Router<AppState> {
-    Router::new().route("/", get(connect)).route(
-        "/",
-        post(command_handler).route_layer(axum::middleware::from_fn_with_state(
-            state,
-            middleware::auth::auth,
-        )),
-    )
+    Router::new()
+        .route("/", get(sse_handler))
+        .route("/", post(command_handler)
+            .route_layer(axum::middleware::from_fn_with_state(
+                state.clone(),
+                middleware::auth::auth,
+            )))
+        .route("/sse_token", get(sse_token)
+            .route_layer(axum::middleware::from_fn_with_state(
+                state,
+                middleware::auth::auth,
+            )))
 }
 
-async fn connect(State(state): State<AppState>, ws: WebSocketUpgrade) -> impl IntoResponse {
-    ws.on_upgrade(move |socket| handle_connect(socket, state))
+async fn sse_token(
+    State(state): State<AppState>,
+    Extension(current_user): Extension<user::Model>,
+) -> GroovesResult<impl IntoResponse> {
+    let token = util::generate_session_token();
+    state
+        .sse_tokens
+        .lock()
+        .unwrap()
+        .insert(token.clone(), current_user);
+    return Ok(token);
 }
 
-async fn handle_connect(mut socket: WebSocket, state: AppState) {
-    // Get the current user
-    let user = if let Ok(Some(user)) = authorize(&mut socket, &state.db).await {
-        user
-    } else {
-        return;
+async fn sse_handler(
+    State(state): State<AppState>,
+    Query(params): Query<HashMap<String, String>>,
+) -> GroovesResult<Sse<impl Stream<Item = Result<Event, Infallible>>>> {
+    let sse_token = params
+        .get("token")
+        .ok_or(GroovesError::OtherError("Missing token".to_string()))?;
+
+    let user = state
+        .sse_tokens
+        .lock()
+        .unwrap()
+        .remove(sse_token)
+        .ok_or(GroovesError::OtherError("invalid token".to_string()))?;
+
+    let stream = async_stream::stream! {
+        loop {
+            let manager = &state.player_manager;
+            let connection = manager.await_player_connection(user.id).await;
+            let mut receiver = connection.receiver;
+
+            while receiver.changed().await.is_ok() {
+                let m = serde_json::to_string(&*receiver.borrow_and_update());
+
+                if let Ok(msg) = m {
+                    yield Ok(Event::default().data(msg));
+                } else {
+                    yield Ok(Event::default().data(""));
+                };
+            }
+
+            yield Ok(Event::default().data(""));
+        }
     };
 
-    loop {
-        let manager = &state.player_manager;
-
-        let connection = manager.await_player_connection(user.id).await;
-        let mut receiver = connection.receiver;
-
-        // Loop and wait for player state updates, begin sending them
-        while receiver.changed().await.is_ok() {
-            let m = serde_json::to_string(&*receiver.borrow());
-
-            if let Ok(msg) = m {
-                if socket.send(Message::Text(msg)).await.is_err() {
-                    return;
-                }
-            } else if socket.send(Message::Binary(Vec::new())).await.is_err() {
-                return;
-            };
-        }
-
-        if socket.send(Message::Binary(Vec::new())).await.is_err() {
-            return;
-        }
-    }
+    Ok(Sse::new(stream).keep_alive(KeepAlive::default()))
 }
 
 #[debug_handler]
@@ -71,23 +93,4 @@ pub async fn command_handler(
     } else {
         Err(GroovesError::OtherError("command failed".to_string()))
     }
-}
-
-async fn authorize(
-    socket: &mut WebSocket,
-    db: &DatabaseConnection,
-) -> GroovesResult<Option<user::Model>> {
-    if let Some(Ok(Message::Text(token))) = socket.recv().await {
-        let result: Option<(_, Option<user::Model>)> = Session::find()
-            .filter(session::Column::Token.eq(token))
-            .find_also_related(User)
-            .one(db)
-            .await?;
-
-        if let Some((_, user)) = result {
-            return Ok(user);
-        }
-    }
-
-    Ok(None)
 }

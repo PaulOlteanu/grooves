@@ -51,7 +51,7 @@ async fn main() {
     let state = Arc::new(State {
         db,
         player_manager: PlayerManager::new(player_db_pool),
-        logging_in_clients: Mutex::new(HashMap::new()),
+        sse_tokens: Mutex::new(HashMap::new()),
     });
 
     let router = routes::router(state.clone()).with_state(state);
