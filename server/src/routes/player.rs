@@ -1,15 +1,15 @@
+use std::collections::HashMap;
+use std::convert::Infallible;
+
 use axum::extract::{Query, State};
 use axum::response::sse::{Event, KeepAlive};
 use axum::response::{IntoResponse, Sse};
 use axum::routing::{get, post};
 use axum::{Extension, Json, Router};
 use axum_macros::debug_handler;
+use futures_util::stream::Stream;
 use grooves_entity::user;
 use grooves_player::player::commands::Command;
-
-use futures_util::stream::Stream;
-use std::collections::HashMap;
-use std::convert::Infallible;
 
 use crate::error::{GroovesError, GroovesResult};
 use crate::{middleware, util, AppState};
@@ -40,7 +40,7 @@ async fn sse_token(
         .lock()
         .unwrap()
         .insert(token.clone(), current_user);
-    return Ok(token);
+    Ok(token)
 }
 
 async fn sse_handler(

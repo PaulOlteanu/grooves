@@ -17,7 +17,7 @@ grooves-migration = { path = "grooves-migration" }
 grooves-player = { path = "grooves-player" }
 itertools = "0.10"
 rand = "0.8"
-rspotify = { git = "https://github.com/ramsayleung/rspotify.git", branch = "ramsay_fix_serialize_error" }
+rspotify = { git = "https://github.com/ramsayleung/rspotify.git", rev = "b92316e" }
 sea-orm = { version = "0.11", features = [
     "sqlx-postgres",
     "runtime-tokio-rustls",
