@@ -3,7 +3,7 @@ import Navbar from "../components/navbar";
 
 export default function Root() {
   return (
-    <div className="bg-neutral-800 text-neutral-300 h-screen min-h-screen max-h-screen w-screen min-w-screen max-w-screen flex flex-col">
+    <div className="bg-neutral-800 text-neutral-100 h-screen min-h-screen max-h-screen w-screen min-w-screen max-w-screen flex flex-col">
       <div className="flex p-3">
         <Navbar />
       </div>

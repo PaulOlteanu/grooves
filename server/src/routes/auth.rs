@@ -19,12 +19,6 @@ pub fn router() -> Router<AppState> {
     Router::new().route("/", post(login).delete(logout))
 }
 
-// #[derive(Deserialize)]
-// struct SpotifyCreds {
-//     pub access_token: String,
-//     pub refresh_token: Option<String>,
-// }
-
 #[derive(Deserialize)]
 struct AuthRequest {
     pub code: String,
@@ -45,9 +39,9 @@ async fn login(
         token.as_ref().map(|t| t.clone().into())
     };
 
-    let user = client.me().await?;
+    let user = client.current_user().await?;
 
-    if user.product.is_none() || user.product.unwrap() != SubscriptionLevel::Premium {
+    if !matches!(user.product, Some(SubscriptionLevel::Premium)) {
         return Err(GroovesError::OtherError("Must be premium user".to_owned()));
     }
 

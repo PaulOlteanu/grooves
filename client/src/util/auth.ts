@@ -11,7 +11,7 @@ function base64url(bytes: number[]) {
 
 const clientId = "1ef695e7fecc4086a26b8cd329e477dc";
 const scopes =
-  "user-read-currently-playing user-modify-playback-state user-read-playback-state playlist-read-private user-read-private";
+  "user-read-currently-playing user-modify-playback-state user-read-playback-state playlist-read-private user-read-private user-read-email";
 
 export function getSpotifyRequestUrl() {
   const state = base64url(Array.from(randomBytes(96)));
@@ -22,7 +22,6 @@ export function getSpotifyRequestUrl() {
     redirect_uri: `${import.meta.env.VITE_FRONTEND_URL}/callback`,
     state,
     scope: scopes,
-    show_dialog: "false",
   });
 
   const requestUrl = new URL(

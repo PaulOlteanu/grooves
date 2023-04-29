@@ -54,7 +54,9 @@ impl PlayerConnection {
         let (player_sender, manager_receiver) = watch::channel(None);
         let player = Player::new(spotify_client, db, player_sender, player_receiver);
 
-        task::spawn(async move { player.run().await });
+        task::spawn(async move {
+            let _ = player.run().await;
+        });
 
         Self {
             sender: manager_sender,

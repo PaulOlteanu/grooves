@@ -1,10 +1,7 @@
 import { useEffect, useState } from "react";
-import useWebSocket from "react-use-websocket";
-import _ from "lodash";
 import {
   ArrowBendDownLeft,
   ArrowBendDownRight,
-  Pause,
   SkipBack,
   SkipForward,
   VinylRecord,
@@ -21,7 +18,7 @@ function PlaybackControls() {
   return (
     <div>
       <button
-        className="w-1/5"
+        className="w-1/4"
         onClick={() =>
           void apiClient.sendPlayerCommand({ type: "prev_element" })
         }
@@ -29,25 +26,19 @@ function PlaybackControls() {
         <ArrowBendDownLeft height={32} width={32} className="mx-auto" />
       </button>
       <button
-        className="w-1/5"
+        className="w-1/4"
         onClick={() => void apiClient.sendPlayerCommand({ type: "prev_song" })}
       >
         <SkipBack height={32} width={32} className="mx-auto" />
       </button>
       <button
-        className="w-1/5"
-        onClick={() => void apiClient.sendPlayerCommand({ type: "pause" })}
-      >
-        <Pause height={32} width={32} className="mx-auto" />
-      </button>
-      <button
-        className="w-1/5"
+        className="w-1/4"
         onClick={() => void apiClient.sendPlayerCommand({ type: "next_song" })}
       >
         <SkipForward height={32} width={32} className="mx-auto" />
       </button>
       <button
-        className="w-1/5"
+        className="w-1/4"
         onClick={() =>
           void apiClient.sendPlayerCommand({ type: "next_element" })
         }
@@ -62,7 +53,6 @@ type PlaybackInfo = {
   album_name: string;
   artists: string;
   image_url: string;
-  playback_status: string;
   song_name: string;
 };
 
@@ -72,7 +62,6 @@ function isPlaybackInfo(val: unknown): val is PlaybackInfo {
     v.album_name !== undefined &&
     v.artists !== undefined &&
     v.image_url !== undefined &&
-    v.playback_status !== undefined &&
     v.song_name !== undefined
   );
 }
@@ -87,6 +76,11 @@ export default function Player() {
   const [playerState, setPlaybackInfo] = useState<PlaybackInfo | null>(null);
 
   const setPlayerState = (data_str: any) => {
+    if (!data_str) {
+      setPlaybackInfo(null);
+      return;
+    }
+
     const data: unknown = JSON.parse(data_str as string);
     if (data === null || isPlaybackInfo(data)) {
       setPlaybackInfo(data);

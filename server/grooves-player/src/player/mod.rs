@@ -1,4 +1,4 @@
-use anyhow::{anyhow, Context};
+use anyhow::anyhow;
 use chrono::Duration;
 use grooves_entity::playlist::{self, Entity as Playlist, PlaylistElement, Song};
 use rand::seq::SliceRandom;
@@ -13,12 +13,8 @@ use tokio::sync::{mpsc, watch};
 use self::commands::Command;
 
 pub mod commands;
-
-#[derive(Clone, Debug, Serialize, Deserialize)]
-pub enum PlaybackStatus {
-    Paused,
-    Playing,
-}
+pub mod error;
+use error::PlayerError;
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct PlaybackInfo {
@@ -26,7 +22,6 @@ pub struct PlaybackInfo {
     song_name: String,
     album_name: String,
     artists: String,
-    playback_status: PlaybackStatus,
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
@@ -74,14 +69,13 @@ impl PlayerState {
 
     fn get_playback_info(&self) -> PlaybackInfo {
         let element = self.get_current_element();
-        let song = &element.songs[self.current_song];
+        let song = self.get_current_song();
 
         PlaybackInfo {
             image_url: song.image_url.clone(),
             song_name: song.name.clone(),
             album_name: element.name.clone(),
             artists: song.artists.clone(),
-            playback_status: PlaybackStatus::Playing,
         }
     }
 }
@@ -99,7 +93,6 @@ enum TickResult {
     Unchanged,
 }
 
-// TODO: Clean this up
 impl Player {
     pub fn new(
         spotify_client: AuthCodeSpotify,
@@ -116,14 +109,12 @@ impl Player {
         }
     }
 
-    pub async fn run(mut self) {
+    pub async fn run(mut self) -> Result<(), PlayerError> {
         let mut failures = 0;
 
         loop {
             if let Ok(command) = self.receiver.try_recv() {
-                if self.handle_command(command).await.is_err() {
-                    return;
-                }
+                self.handle_command(command).await?;
             }
 
             if self.playback_state.is_some() {
@@ -133,9 +124,7 @@ impl Player {
                     failures = 0;
 
                     if let TickResult::Changed = result {
-                        if self.send_state().await.is_err() {
-                            return;
-                        }
+                        self.send_state().await?
                     }
                 } else if let Err(e) = tick_result {
                     println!("Tick errored: {:?}", e);
@@ -145,7 +134,7 @@ impl Player {
 
             if failures >= 5 {
                 println!("Player exiting");
-                return;
+                return Err(PlayerError::TooManyErrors);
             }
 
             tokio::time::sleep(tokio::time::Duration::from_secs(2)).await;
@@ -153,12 +142,9 @@ impl Player {
     }
 
     async fn tick(&mut self) -> Result<TickResult, anyhow::Error> {
-        // Get spotify playback state
-        let playback = self
-            .spotify_client
-            .current_playback(None, None::<Vec<_>>)
-            .await?
-            .context("no current playback")?;
+        let Some(playback) = self.spotify_client.current_playback(None, None::<Vec<_>>).await? else {
+            return Ok(TickResult::Unchanged);
+        };
 
         let mut playback_state = self.playback_state.as_mut().unwrap();
         let current_element = playback_state.get_current_element();
@@ -220,80 +206,81 @@ impl Player {
         Ok(TickResult::Unchanged)
     }
 
-    async fn handle_command(&mut self, command: Command) -> Result<(), ()> {
-        match command {
-            Command::Play {
-                playlist_id,
-                element_index,
-                ..
-            } => {
-                let playlist = if let Ok(Some(playlist)) =
+    async fn handle_command(&mut self, command: Command) -> Result<(), PlayerError> {
+        if let Command::Play {
+            playlist_id,
+            element_index,
+            ..
+        } = command
+        {
+            let Ok(Some(playlist)) =
                     Playlist::find_by_id(playlist_id).one(&self.db).await
-                {
-                    playlist
-                } else {
-                    return Err(());
+                else {
+                    return Err(PlayerError::CommandError);
                 };
 
-                let new_state = PlayerState {
-                    device_id: None,
-                    order: generate_order(playlist.elements.0.len(), element_index),
-                    playlist,
-                    current_element: 0,
-                    current_song: 0,
-                };
+            let new_state = PlayerState {
+                device_id: None,
+                order: generate_order(playlist.elements.0.len(), element_index),
+                playlist,
+                current_element: 0,
+                current_song: 0,
+            };
 
-                self.playback_state = Some(new_state);
-                let playback_state = self.playback_state.as_ref().unwrap();
+            self.playback_state = Some(new_state);
+            let playback_state = self.playback_state.as_ref().unwrap();
+            let element = playback_state.get_current_element();
+
+            let res = play_element(&self.spotify_client, element).await;
+
+            if res.is_ok() && self.send_state().await.is_err() {
+                return Err(PlayerError::ChannelError);
+            }
+            return Ok(());
+        }
+
+        let Some(playback_state) = self.playback_state.as_mut() else {
+            return Err(PlayerError::NoPlayback)
+        };
+
+        match command {
+            Command::Play { .. } => unreachable!(),
+            Command::Pause => self.spotify_client.pause_playback(None).await?,
+            Command::Resume => self.spotify_client.resume_playback(None, None).await?,
+            Command::NextSong => self.spotify_client.next_track(None).await?,
+            Command::PrevSong => self.spotify_client.previous_track(None).await?,
+
+            Command::NextElement => {
+                playback_state.increment_current();
+
                 let element = playback_state.get_current_element();
-
                 let res = play_element(&self.spotify_client, element).await;
 
                 if res.is_ok() && self.send_state().await.is_err() {
-                    return Err(());
-                }
-            }
-
-            Command::NextElement => {
-                if let Some(playback_state) = self.playback_state.as_mut() {
-                    playback_state.increment_current();
-
-                    let element = playback_state.get_current_element();
-                    let res = play_element(&self.spotify_client, element).await;
-
-                    if res.is_ok() && self.send_state().await.is_err() {
-                        return Err(());
-                    }
-                } else {
-                    return Err(());
+                    return Err(PlayerError::ChannelError);
                 }
             }
 
             Command::PrevElement => {
-                if let Some(playback_state) = self.playback_state.as_mut() {
-                    playback_state.decrement_current();
+                playback_state.decrement_current();
 
-                    let element = playback_state.get_current_element();
-                    let res = play_element(&self.spotify_client, element).await;
+                let element = playback_state.get_current_element();
+                let res = play_element(&self.spotify_client, element).await;
 
-                    if res.is_ok() && self.send_state().await.is_err() {
-                        return Err(());
-                    }
-                } else {
-                    return Err(());
+                if res.is_ok() {
+                    self.send_state().await?
                 }
             }
 
-            cmd => {
+            Command::AddToQueue | Command::RemoveFromQueue | Command::Exit => {
                 println!("Unimplemented command");
-                println!("{:?}", cmd);
             }
         }
 
         Ok(())
     }
 
-    async fn send_state(&self) -> Result<(), ()> {
+    async fn send_state(&self) -> Result<(), PlayerError> {
         if let Some(playback_state) = &self.playback_state {
             let playback_info = playback_state.get_playback_info();
             if self.sender.send(Some(playback_info)).is_ok() {
@@ -301,7 +288,7 @@ impl Player {
             }
         }
 
-        Err(())
+        Err(PlayerError::NoPlayback)
     }
 }
 

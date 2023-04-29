@@ -10,7 +10,6 @@ use tracing_subscriber::prelude::__tracing_subscriber_SubscriberExt;
 use tracing_subscriber::util::SubscriberInitExt;
 
 mod error;
-mod extractors;
 mod middleware;
 mod routes;
 mod state;

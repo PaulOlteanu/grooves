@@ -7,6 +7,7 @@ import type {
   Playlist as PlaylistT,
 } from "../types";
 import { removeElement, removeSong, updateElement } from "../util/playlists";
+import Card from "./card";
 
 function Song({
   song,
@@ -17,12 +18,18 @@ function Song({
 }) {
   return (
     <div className="flex">
-      <span className="inline-block w-full whitespace-nowrap overflow-hidden text-ellipsis">
-        {song.name}
-      </span>
-      <button type="button" onClick={onDelete}>
-        <Trash size={18} className="items-center" />
-      </button>
+      <div className="flex flex-grow min-w-0">
+        <Card
+          content={song.name}
+          subContent={song.artists}
+          imageUrl={song.image_url}
+        />
+      </div>
+      <div className="flex align-center">
+        <button type="button" className="align-center" onClick={onDelete}>
+          <Trash size={18} className="items-center" />
+        </button>
+      </div>
     </div>
   );
 }
@@ -48,7 +55,7 @@ function Element({
   return (
     <div className="rounded border px-2 mb-4">
       <div className="flex">
-        <span className="inline-block w-full whitespace-nowrap overflow-hidden text-ellipsis">
+        <span className="text-center text-xl font-bold inline-block w-full whitespace-nowrap overflow-hidden text-ellipsis">
           {element.name}
         </span>
         <button type="button" onClick={onDelete}>
@@ -98,7 +105,7 @@ export default function Playlist({ playlist }: { playlist: PlaylistT }) {
   return (
     <div className="h-full max-h-full w-full overflow-auto">
       <div className="text-center items-center">
-        <p className="text-center text-2xl font-bold py-1">
+        <p className="text-center underline text-2xl font-bold py-1">
           {playlist.name}
           <button
             onClick={() => void apiClient.sendPlayerCommand(play_playlist)}

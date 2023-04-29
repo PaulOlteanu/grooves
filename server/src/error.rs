@@ -52,6 +52,8 @@ impl<T> From<SendError<T>> for GroovesError {
 
 impl IntoResponse for GroovesError {
     fn into_response(self) -> axum::response::Response {
+        println!("ERROR: {:?}", self);
+
         match self {
             Self::Unauthorized => (StatusCode::UNAUTHORIZED, "Unauthorized").into_response(),
             Self::NotFound => (StatusCode::NOT_FOUND).into_response(),
