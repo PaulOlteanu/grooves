@@ -13,12 +13,15 @@ use rspotify::prelude::{BaseClient, Id};
 use sea_orm::{ActiveModelBehavior, ActiveModelTrait, Set};
 use serde::Serialize;
 use serde_json::json;
+use tracing::{debug, info};
 
 use crate::error::{GroovesError, GroovesResult};
 use crate::util::spotify;
 use crate::{middleware, AppState};
 
 pub fn router(state: AppState) -> Router<AppState> {
+    info!("Creating spotify api routes");
+
     Router::new()
         .route("/search", get(search))
         .route("/album_to_element/:album_id", get(album_to_element))
@@ -43,51 +46,47 @@ async fn search(
 ) -> GroovesResult<impl IntoResponse> {
     let query = params
         .get("q")
-        .ok_or(GroovesError::OtherError("Invalid query".to_string()))?;
+        .ok_or(GroovesError::InternalError("Invalid query".to_string()))?;
 
     let token = current_user.token.ok_or(GroovesError::Unauthorized)?.0;
 
     let client = spotify::client_with_token(token);
 
-    let songs = client
-        .search(query, SearchType::Track, None, None, None, None)
-        .await?;
-
-    let songs: Vec<SearchResponse> = if let SearchResult::Tracks(songs) = songs {
-        songs
-            .items
-            .iter()
-            .map(|song| SearchResponse {
-                name: song.name.clone(),
-                spotify_id: song.id.as_ref().unwrap().id().to_string(),
-                image_url: get_min_image_url(&song.album.images).unwrap_or("".to_string()),
-            })
-            .collect()
-    } else {
-        return Err(GroovesError::OtherError(
-            "Spotify search failed".to_string(),
-        ));
+    debug!(query, "searching spotify for songs");
+    let SearchResult::Tracks(songs) = client
+        .search(query, SearchType::Track, None, None, None, None).await? else {
+            return Err(GroovesError::InternalError(
+                "Spotify search failed".to_string(),
+            ));
     };
 
-    let albums = client
-        .search(query, SearchType::Album, None, None, None, None)
-        .await?;
+    let songs: Vec<SearchResponse> = songs
+        .items
+        .iter()
+        .map(|song| SearchResponse {
+            name: song.name.clone(),
+            spotify_id: song.id.as_ref().unwrap().id().to_string(),
+            image_url: get_min_image_url(&song.album.images).unwrap_or("".to_string()),
+        })
+        .collect();
 
-    let albums: Vec<SearchResponse> = if let SearchResult::Albums(albums) = albums {
-        albums
-            .items
-            .iter()
-            .map(|album| SearchResponse {
-                name: album.name.clone(),
-                spotify_id: album.id.as_ref().unwrap().id().to_string(),
-                image_url: get_min_image_url(&album.images).unwrap_or("".to_string()),
-            })
-            .collect()
-    } else {
-        return Err(GroovesError::OtherError(
-            "Spotify search failed".to_string(),
-        ));
+    debug!(query, "searching spotify for albums");
+    let SearchResult::Albums(albums) = client
+        .search(query, SearchType::Album, None, None, None, None).await? else {
+            return Err(GroovesError::InternalError(
+                "Spotify search failed".to_string(),
+            ));
     };
+
+    let albums: Vec<SearchResponse> = albums
+        .items
+        .iter()
+        .map(|album| SearchResponse {
+            name: album.name.clone(),
+            spotify_id: album.id.as_ref().unwrap().id().to_string(),
+            image_url: get_min_image_url(&album.images).unwrap_or("".to_string()),
+        })
+        .collect();
 
     let mut active_user = user::ActiveModel::new();
     active_user.id = Set(current_user.id);
@@ -111,6 +110,7 @@ async fn album_to_element(
 
     let client = spotify::client_with_token(token);
 
+    debug!(album_id, "getting album from spotify");
     let album = client.album(AlbumId::from_id(album_id)?).await?;
     let image_url = get_max_image_url(&album.images).unwrap_or("".to_string());
     let artists = album.artists.iter().map(|a| &a.name).join(", ");

@@ -6,8 +6,8 @@ use grooves_migration::{Migrator, MigratorTrait};
 use grooves_player::manager::PlayerManager;
 use sea_orm::{Database, DatabaseConnection};
 use state::State;
-use tracing_subscriber::prelude::__tracing_subscriber_SubscriberExt;
-use tracing_subscriber::util::SubscriberInitExt;
+use tracing_subscriber::prelude::*;
+use tracing_subscriber::EnvFilter;
 
 mod error;
 mod middleware;
@@ -21,11 +21,11 @@ type AppState = Arc<State>;
 async fn main() {
     dotenvy::dotenv().ok();
 
+    let log_filter = EnvFilter::try_from_default_env()
+        .unwrap_or_else(|_| "grooves_server=debug,tower_http=debug,axum::rejection=trace".into());
+
     tracing_subscriber::registry()
-        .with(
-            tracing_subscriber::EnvFilter::try_from_default_env()
-                .unwrap_or_else(|_| "grooves_axum=debug,tower_http=debug".into()),
-        )
+        .with(log_filter)
         .with(tracing_subscriber::fmt::layer())
         .init();
 

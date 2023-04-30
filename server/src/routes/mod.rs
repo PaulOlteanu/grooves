@@ -12,7 +12,7 @@ mod playlists;
 mod spotify;
 
 pub fn router(state: AppState) -> Router<AppState> {
-    let frontend_url = std::env::var("FRONTEND_URL").expect("FRONTEND_URL must be set");
+    let frontend_url = std::env::var("FRONTEND_URL").unwrap();
 
     let cors = CorsLayer::new()
         .allow_methods([

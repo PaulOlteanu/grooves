@@ -5,6 +5,7 @@ use axum::response::Response;
 use grooves_entity::session::{self, Entity as Session};
 use grooves_entity::user::Entity as User;
 use sea_orm::{ColumnTrait, EntityTrait, QueryFilter};
+use tracing::warn;
 
 use crate::error::{GroovesError, GroovesResult};
 use crate::AppState;
@@ -19,13 +20,13 @@ pub async fn auth<B>(
         .get(http::header::AUTHORIZATION)
         .and_then(|header| header.to_str().ok());
 
-    let auth_header = if let Some(auth_header) = auth_header {
-        auth_header
-    } else {
+    let Some(auth_header) = auth_header else {
+        warn!("missing authorization header");
         return Err(GroovesError::Unauthorized);
     };
 
     if !auth_header.starts_with("Bearer ") {
+        warn!("invalid authorization header format");
         return Err(GroovesError::Unauthorized);
     }
 

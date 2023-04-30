@@ -3,7 +3,7 @@ use chrono::Duration;
 use grooves_entity::playlist::{self, Entity as Playlist, PlaylistElement, Song};
 use rand::seq::SliceRandom;
 use rand::thread_rng;
-use rspotify::model::{PlayableItem, RepeatState};
+use rspotify::model::{FullTrack, PlayableItem, RepeatState};
 use rspotify::prelude::OAuthClient;
 use rspotify::{AuthCodeSpotify, ClientResult};
 use sea_orm::{DatabaseConnection, EntityTrait};
@@ -166,24 +166,8 @@ impl Player {
             }
         }
 
-        let playing_item = if let Some(item) = playback.item {
-            item
-        } else {
-            return Err(anyhow!("no playing item despite is_playing being true"));
-        };
-
-        let playing_song = if let PlayableItem::Track(song) = playing_item {
-            song
-        } else {
-            // A podcast episode is playing
-            return Err(anyhow!("unexpected item playing"));
-        };
-
-        let playing_id = if let Some(id) = playing_song.id {
-            id
-        } else {
-            // It's playing a local file
-            return Err(anyhow!("unexpected item playing"));
+        let Some(PlayableItem::Track(FullTrack{id: Some(playing_id), ..})) = playback.item else {
+            return Err(anyhow!("couldn't get current playback id"));
         };
 
         let playing_index = playback_state

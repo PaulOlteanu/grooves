@@ -8,11 +8,14 @@ use grooves_entity::playlist::{self, Entity as Playlist, PlaylistElement};
 use grooves_entity::user;
 use sea_orm::{ActiveModelBehavior, ActiveModelTrait, ColumnTrait, EntityTrait, QueryFilter, Set};
 use serde::Deserialize;
+use tracing::info;
 
 use crate::error::{GroovesError, GroovesResult};
 use crate::{middleware, AppState};
 
 pub fn router(state: AppState) -> Router<AppState> {
+    info!("Creating playlist routes");
+
     Router::new()
         .route("/", get(get_playlists).post(create_playlist))
         .route(
