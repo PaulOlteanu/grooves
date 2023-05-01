@@ -70,7 +70,7 @@ async fn get_playlist(
 ) -> GroovesResult<impl IntoResponse> {
     if let Some(user_playlist) = Playlist::find_by_id(playlist_id).one(&state.db).await? {
         if user_playlist.owner_id != current_user.id {
-            Err(GroovesError::Unauthorized)
+            Err(GroovesError::Forbidden)
         } else {
             Ok(Json(user_playlist))
         }
@@ -87,7 +87,7 @@ async fn update_playlist(
 ) -> GroovesResult<impl IntoResponse> {
     if let Some(user_playlist) = Playlist::find_by_id(playlist_id).one(&state.db).await? {
         if user_playlist.owner_id != current_user.id {
-            Err(GroovesError::Unauthorized)
+            Err(GroovesError::Forbidden)
         } else {
             let mut active_playlist: playlist::ActiveModel = user_playlist.into();
             active_playlist.name = Set(payload.name);
@@ -108,7 +108,7 @@ async fn delete_playlist(
 ) -> GroovesResult<impl IntoResponse> {
     if let Some(user_playlist) = Playlist::find_by_id(playlist_id).one(&state.db).await? {
         if user_playlist.owner_id != current_user.id {
-            Err(GroovesError::Unauthorized)
+            Err(GroovesError::Forbidden)
         } else {
             Playlist::delete_by_id(playlist_id).exec(&state.db).await?;
             Ok(StatusCode::OK)
