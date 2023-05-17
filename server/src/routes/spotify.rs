@@ -66,7 +66,9 @@ async fn search(
         .map(|song| SearchResponse {
             name: song.name.clone(),
             spotify_id: song.id.as_ref().unwrap().id().to_string(),
-            image_url: get_min_image_url(&song.album.images).unwrap_or("".to_string()),
+            image_url: get_min_image_url(&song.album.images)
+                .unwrap_or("")
+                .to_string(),
         })
         .collect();
 
@@ -84,7 +86,7 @@ async fn search(
         .map(|album| SearchResponse {
             name: album.name.clone(),
             spotify_id: album.id.as_ref().unwrap().id().to_string(),
-            image_url: get_min_image_url(&album.images).unwrap_or("".to_string()),
+            image_url: get_min_image_url(&album.images).unwrap_or("").to_string(),
         })
         .collect();
 
@@ -95,7 +97,7 @@ async fn search(
     let token = token.as_ref().map(|t| t.clone().into());
     active_user.token = Set(token);
 
-    active_user.update(&state.db).await?;
+    active_user.update(&state.db_pool).await?;
 
     Ok(Json(json!({"songs": songs, "albums": albums})))
 }
@@ -112,7 +114,7 @@ async fn album_to_element(
 
     debug!(album_id, "getting album from spotify");
     let album = client.album(AlbumId::from_id(album_id)?).await?;
-    let image_url = get_max_image_url(&album.images).unwrap_or("".to_string());
+    let image_url = get_max_image_url(&album.images).unwrap_or("");
     let artists = album.artists.iter().map(|a| &a.name).join(", ");
 
     let songs: Vec<Song> = album
@@ -121,7 +123,7 @@ async fn album_to_element(
         .iter()
         .map(|s| Song {
             name: s.name.clone(),
-            image_url: image_url.clone(),
+            image_url: image_url.to_string(),
             artists: artists.clone(),
             spotify_id: s.id.as_ref().unwrap().clone(),
         })
@@ -134,28 +136,28 @@ async fn album_to_element(
     let token = token.as_ref().map(|t| t.clone().into());
     active_user.token = Set(token);
 
-    active_user.update(&state.db).await?;
+    active_user.update(&state.db_pool).await?;
 
     let response: PlaylistElement = PlaylistElement {
         name: album.name,
         artists,
-        image_url,
+        image_url: image_url.to_string(),
         songs,
     };
 
     Ok(Json(response))
 }
 
-fn get_min_image_url(images: &[rspotify::model::Image]) -> Option<String> {
+fn get_min_image_url(images: &[rspotify::model::Image]) -> Option<&str> {
     images
         .iter()
         .min_by_key(|a| a.height.unwrap_or(0))
-        .map(|img| img.url.clone())
+        .map(|img| &*img.url)
 }
 
-fn get_max_image_url(images: &[rspotify::model::Image]) -> Option<String> {
+fn get_max_image_url(images: &[rspotify::model::Image]) -> Option<&str> {
     images
         .iter()
         .max_by_key(|a| a.height.unwrap_or(0))
-        .map(|img| img.url.clone())
+        .map(|img| &*img.url)
 }

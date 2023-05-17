@@ -35,7 +35,7 @@ pub async fn auth<B>(
     let result = Session::find()
         .filter(session::Column::Token.eq(auth_token))
         .find_also_related(User)
-        .one(&state.db)
+        .one(&state.db_pool)
         .await?;
 
     if let Some((_, Some(existing_user))) = result {

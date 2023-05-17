@@ -36,7 +36,7 @@ async fn get_playlists(
 ) -> GroovesResult<impl IntoResponse> {
     let user_playlists = Playlist::find()
         .filter(playlist::Column::OwnerId.eq(current_user.id))
-        .all(&state.db)
+        .all(&state.db_pool)
         .await?;
 
     Ok(Json(user_playlists))
@@ -59,7 +59,7 @@ async fn create_playlist(
     playlist.elements = Set(payload.elements.into());
     playlist.owner_id = Set(current_user.id);
 
-    let result = playlist.insert(&state.db).await?;
+    let result = playlist.insert(&state.db_pool).await?;
     Ok(Json(result))
 }
 
@@ -68,7 +68,10 @@ async fn get_playlist(
     Extension(current_user): Extension<user::Model>,
     Path(playlist_id): Path<i32>,
 ) -> GroovesResult<impl IntoResponse> {
-    if let Some(user_playlist) = Playlist::find_by_id(playlist_id).one(&state.db).await? {
+    if let Some(user_playlist) = Playlist::find_by_id(playlist_id)
+        .one(&state.db_pool)
+        .await?
+    {
         if user_playlist.owner_id != current_user.id {
             Err(GroovesError::Forbidden)
         } else {
@@ -85,14 +88,17 @@ async fn update_playlist(
     Path(playlist_id): Path<i32>,
     Json(payload): Json<CreatePlaylist>,
 ) -> GroovesResult<impl IntoResponse> {
-    if let Some(user_playlist) = Playlist::find_by_id(playlist_id).one(&state.db).await? {
+    if let Some(user_playlist) = Playlist::find_by_id(playlist_id)
+        .one(&state.db_pool)
+        .await?
+    {
         if user_playlist.owner_id != current_user.id {
             Err(GroovesError::Forbidden)
         } else {
             let mut active_playlist: playlist::ActiveModel = user_playlist.into();
             active_playlist.name = Set(payload.name);
             active_playlist.elements = Set(payload.elements.into());
-            let playlist = active_playlist.update(&state.db).await?;
+            let playlist = active_playlist.update(&state.db_pool).await?;
 
             Ok(Json(playlist))
         }
@@ -106,11 +112,16 @@ async fn delete_playlist(
     Extension(current_user): Extension<user::Model>,
     Path(playlist_id): Path<i32>,
 ) -> GroovesResult<impl IntoResponse> {
-    if let Some(user_playlist) = Playlist::find_by_id(playlist_id).one(&state.db).await? {
+    if let Some(user_playlist) = Playlist::find_by_id(playlist_id)
+        .one(&state.db_pool)
+        .await?
+    {
         if user_playlist.owner_id != current_user.id {
             Err(GroovesError::Forbidden)
         } else {
-            Playlist::delete_by_id(playlist_id).exec(&state.db).await?;
+            Playlist::delete_by_id(playlist_id)
+                .exec(&state.db_pool)
+                .await?;
             Ok(StatusCode::OK)
         }
     } else {

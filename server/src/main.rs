@@ -4,8 +4,9 @@ use std::sync::{Arc, Mutex};
 
 use grooves_migration::{Migrator, MigratorTrait};
 use grooves_player::manager::PlayerManager;
-use sea_orm::{Database, DatabaseConnection};
+use sea_orm::{ConnectOptions, Database, DatabaseConnection};
 use state::State;
+use tracing::info;
 use tracing_subscriber::prelude::*;
 use tracing_subscriber::EnvFilter;
 
@@ -21,11 +22,21 @@ type AppState = Arc<State>;
 async fn main() {
     dotenvy::dotenv().ok();
 
-    let log_filter = EnvFilter::try_from_default_env()
-        .unwrap_or_else(|_| "grooves_server=debug,tower_http=debug,axum::rejection=trace".into());
+    let filter = match std::env::var("RUST_LOG").as_deref() {
+        Ok("TRACE") => "trace",
+        Ok("DEBUG") => {
+            "grooves_server=debug,grooves_player=debug,tower_http=debug,axum::rejection=trace"
+        }
+        Ok("INFO") => "info",
+        Ok("WARN") => "warn",
+        Ok("ERROR") => "error",
+        _ => "grooves_server=debug,grooves_player=debug,tower_http=debug,axum::rejection=trace",
+    };
+
+    let filter = EnvFilter::new(filter);
 
     tracing_subscriber::registry()
-        .with(log_filter)
+        .with(filter)
         .with(tracing_subscriber::fmt::layer())
         .init();
 
@@ -35,20 +46,28 @@ async fn main() {
 
     let database_url = std::env::var("DATABASE_URL").expect("DATABASE_URL must be set");
 
-    let db: DatabaseConnection = Database::connect(&database_url)
+    let mut connection_options = ConnectOptions::new(database_url);
+
+    connection_options
+        .max_connections(50)
+        .sqlx_logging_level(tracing::log::LevelFilter::Trace);
+
+    info!("webserver connecting to database");
+    let db_pool: DatabaseConnection = Database::connect(connection_options.clone())
         .await
         .expect("couldn't connect to database");
 
-    Migrator::up(&db, None)
+    Migrator::up(&db_pool, None)
         .await
         .expect("Failed to migrate database");
 
-    let player_db_pool: DatabaseConnection = Database::connect(&database_url)
+    info!("player connecting to database");
+    let player_db_pool: DatabaseConnection = Database::connect(connection_options)
         .await
         .expect("couldn't connect to database");
 
     let state = Arc::new(State {
-        db,
+        db_pool,
         player_manager: PlayerManager::new(player_db_pool),
         sse_tokens: Mutex::new(HashMap::new()),
     });

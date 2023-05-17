@@ -48,7 +48,7 @@ async fn login(
 
     let existing_user = User::find()
         .filter(user::Column::SpotifyId.eq(user.id.id()))
-        .one(&state.db)
+        .one(&state.db_pool)
         .await?;
 
     let token = {
@@ -60,12 +60,12 @@ async fn login(
     let user: user::Model = if let Some(user) = existing_user {
         let mut active_user: user::ActiveModel = user.into();
         active_user.token = Set(token);
-        active_user.update(&state.db).await?
+        active_user.update(&state.db_pool).await?
     } else {
         let mut active_user = user::ActiveModel::new();
         active_user.spotify_id = Set(user.id.id().to_owned());
         active_user.token = Set(token);
-        active_user.insert(&state.db).await?
+        active_user.insert(&state.db_pool).await?
     };
 
     let session_token = generate_session_token();
@@ -75,7 +75,7 @@ async fn login(
     let mut active_session = session::ActiveModel::new();
     active_session.user_id = Set(user.id);
     active_session.token = Set(session_token);
-    let session = active_session.insert(&state.db).await?;
+    let session = active_session.insert(&state.db_pool).await?;
 
     Ok(Json(json!({ "token": session.token })))
 }
