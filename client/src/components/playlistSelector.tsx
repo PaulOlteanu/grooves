@@ -82,11 +82,11 @@ export default function PlaylistSelector({
 
   // TODO: Fix the overflow on this
   return (
-    <div>
+    <div className="h-full max-h-full w-full overflow-auto">
       <input
         className="bg-neutral-400/10 text-white w-full text-center rounded-t-md"
         type="text"
-        placeholder="Filter"
+        placeholder="Search"
         value={searchFilter}
         onChange={(e) => {
           setSearchFilter(e.target.value);
