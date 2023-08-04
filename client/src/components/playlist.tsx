@@ -34,7 +34,8 @@ function Song({
           imageUrl={song.image_url}
         />
       </div>
-      <div className="flex align-center">
+
+      <div className="hidden md:flex align-center">
         <button type="button" className="align-center" onClick={onDelete}>
           <Trash size={18} className="items-center" />
         </button>
@@ -80,7 +81,7 @@ function Element({
           {element.name}
         </span>
 
-        <button type="button" onClick={onDelete}>
+        <button className="hidden md:block" type="button" onClick={onDelete}>
           <X size={18} className="items-center" />
         </button>
       </div>

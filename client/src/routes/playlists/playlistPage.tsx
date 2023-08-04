@@ -16,12 +16,12 @@ function Page({ playlistId }: { playlistId: number }) {
     };
 
     return (
-      <div className="grid grid-cols-2 gap-[2%] min-w-full h-full max-h-full min-h-full">
-        <div className="bg-neutral-400/10 max-h-full rounded-md flex-grow min-h-0">
+      <div className="grid grid-cols-none gap-0 md:grid-cols-2 md:gap-[2%] min-w-full h-full max-h-full min-h-full">
+        <div className="bg-neutral-400/10 max-h-full rounded-md flex-grow min-h-0 min-w-0">
           <PlaylistComponent playlist={playlist} />
         </div>
 
-        <div className="bg-neutral-400/10 max-h-full rounded-md flex-grow min-h-0">
+        <div className="hidden md:flex bg-neutral-400/10 max-h-full rounded-md flex-grow min-h-0 min-w-0">
           <Search addAlbum={addAlbum} />
         </div>
       </div>
