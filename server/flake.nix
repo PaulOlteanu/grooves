@@ -39,7 +39,7 @@
           modules = [
             {
               # https://devenv.sh/reference/options/
-              packages = with pkgs; [openssl pkg-config];
+              dotenv.enable = true;
 
               languages.rust = {
                 enable = true;

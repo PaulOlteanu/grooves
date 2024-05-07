@@ -3,15 +3,18 @@ members = ["crates/*"]
 resolver = "2"
 
 [workspace.dependencies]
-grooves-model = {path = "./crates/grooves-model", version = "0.0.0"}
-grooves-player = {path = "./crates/grooves-player", version = "0.0.0"}
+grooves-model = { path = "./crates/grooves-model", version = "0.0.0" }
+grooves-player = { path = "./crates/grooves-player", version = "0.0.0" }
 
-rspotify = "0.12"
-serde = {version = "1.0", features=["derive"]}
+rspotify = { version = "0.13", default-features = false, features = [
+  "client-reqwest",
+  "reqwest-rustls-tls",
+] }
+serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
-tokio = {version = "1.0", features = ["full"]}
+tokio = { version = "1.37", features = ["full"] }
 tracing = "0.1"
-tracing-subscriber = {version = "0.3", features = ["env-filter"]}
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 
 [workspace.lints.rust]
 rust_2018_idioms = "warn"

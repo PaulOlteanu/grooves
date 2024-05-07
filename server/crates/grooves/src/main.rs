@@ -18,8 +18,6 @@ type AppState = Arc<State>;
 
 #[tokio::main]
 async fn main() {
-    dotenvy::dotenv().ok();
-
     let filter = match std::env::var("RUST_LOG").as_deref() {
         Ok("TRACE") => "trace",
         Ok("DEBUG") => {
