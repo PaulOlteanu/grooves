@@ -1,12 +1,14 @@
-use std::collections::HashMap;
-use std::sync::Mutex;
+use rand::distributions::Alphanumeric;
+use rand::{thread_rng, Rng};
 
-use grooves_model::User;
-use grooves_player::manager::PlayerManager;
+pub mod spotify;
 
-pub struct State {
-    // pub db_pool: DatabaseConnection,
-    pub db_pool: (),
-    pub player_manager: PlayerManager,
-    pub sse_tokens: Mutex<HashMap<String, User>>,
+const TOKEN_LENGTH: usize = 64;
+pub fn generate_session_token() -> String {
+    let mut rng = thread_rng();
+    (&mut rng)
+        .sample_iter(Alphanumeric)
+        .take(TOKEN_LENGTH)
+        .map(char::from)
+        .collect()
 }
