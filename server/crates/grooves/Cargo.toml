@@ -1,0 +1,27 @@
+[package]
+name = "grooves-server"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+tokio.workspace = true
+tracing.workspace = true
+tracing-subscriber.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+rspotify.workspace = true
+
+grooves-player.workspace = true
+grooves-model.workspace = true
+
+async-stream = "0.3"
+axum = { version = "0.7", features = ["default", "ws"] }
+axum-macros = "0.4.1"
+dotenvy = "0.15"
+itertools = "0.12"
+rand = "0.8"
+sqlx = { version = "0.7", features = [ "runtime-tokio", "tls-rustls", "postgres", "macros", "uuid", "chrono", "json" ] }
+tokio-stream = "0.1"
+tower-http = { version = "0.5.2", features = ["trace", "cors"] }
