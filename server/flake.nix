@@ -1,13 +1,14 @@
 {
   inputs = {
-    nixpkgs.url = "github:NixOS/nixpkgs/nixos-23.05";
-    systems.url = "github:nix-systems/default";
-    devenv.url = "github:cachix/devenv";
+    nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
+    flake-utils.url = "github:numtide/flake-utils";
+    devenv = {
+      url = "github:cachix/devenv";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
     fenix = {
       url = "github:nix-community/fenix";
-      inputs = {
-        nixpkgs.follows = "nixpkgs";
-      };
+      inputs.nixpkgs.follows = "nixpkgs";
     };
   };
 
@@ -20,46 +21,45 @@
     self,
     nixpkgs,
     devenv,
-    systems,
+    flake-utils,
     ...
-  } @ inputs: let
-    forEachSystem = nixpkgs.lib.genAttrs (import systems);
-  in {
-    packages = forEachSystem (system: {
-      devenv-up = self.devShells.${system}.default.config.procfileScript;
+  } @ inputs:
+    flake-utils.lib.eachDefaultSystem (system: let
+      pkgs = nixpkgs.legacyPackages.${system};
+    in {
+      packages = {
+        devenv-up = self.devShells.${system}.default.config.procfileScript;
+      };
+
+      devShells.default = devenv.lib.mkShell {
+        inherit inputs pkgs;
+        modules = [
+          {
+            # https://devenv.sh/reference/options/
+            dotenv.enable = true;
+            packages = [pkgs.flyctl];
+
+            # languages.rust = {
+            #   enable = true;
+            #   channel = "stable";
+            #   mold.enable = false;
+            #   components = ["rustc" "cargo" "clippy" "rustfmt" "rust-analyzer" "rust-src"];
+            # };
+
+            services.postgres = {
+              enable = true;
+              listen_addresses = "127.0.0.1";
+              initialDatabases = [
+                {name = "grooves-dev";}
+              ];
+
+              initialScript = ''
+                CREATE USER grooves SUPERUSER;
+                ALTER USER grooves WITH PASSWORD 'groovesdevpassword';
+              '';
+            };
+          }
+        ];
+      };
     });
-
-    devShells =
-      forEachSystem
-      (system: let
-        pkgs = nixpkgs.legacyPackages.${system};
-      in {
-        default = devenv.lib.mkShell {
-          inherit inputs pkgs;
-          modules = [
-            {
-              # https://devenv.sh/reference/options/
-              dotenv.enable = true;
-
-              languages.rust = {
-                enable = true;
-                channel = "stable";
-                components = ["rustc" "cargo" "clippy" "rustfmt" "rust-analyzer" "rust-src"];
-              };
-
-              services.postgres = {
-                enable = true;
-                package = pkgs.postgresql_15;
-                initialDatabases = [
-                  {
-                    name = "grooves-dev";
-                    schema = ./migrations/all.sql;
-                  }
-                ];
-              };
-            }
-          ];
-        };
-      });
-  };
 }

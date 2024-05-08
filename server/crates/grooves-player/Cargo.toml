@@ -4,6 +4,7 @@ version = "0.0.0"
 edition = "2021"
 
 [dependencies]
+anyhow.workspace = true
 tokio.workspace = true
 serde.workspace = true
 serde_json.workspace = true
@@ -12,7 +13,6 @@ rspotify.workspace = true
 
 grooves-model.workspace = true
 
-anyhow = "1.0"
 chrono = "0.4"
 futures = "0.3"
 itertools = "0.12"

@@ -1,10 +1,11 @@
 use std::collections::HashMap;
 use std::convert::Infallible;
 
+use anyhow::anyhow;
 use axum::extract::{Query, State};
 use axum::response::sse::{Event, KeepAlive};
 use axum::response::{IntoResponse, Sse};
-use axum::routing::get;
+use axum::routing::{get, post};
 use axum::{Extension, Json, Router};
 use axum_macros::debug_handler;
 use grooves_model::User;
@@ -20,12 +21,17 @@ pub fn router(state: AppState) -> Router<AppState> {
     info!("Creating player routes");
 
     Router::new()
-        .route("/", get(sse_handler).post(command_handler))
-        .route("/sse_token", get(sse_token))
+        .route("/", get(sse_handler))
+        .route("/", post(command_handler)
+            .route_layer(axum::middleware::from_fn_with_state(
+                state.clone(),
+                middleware::auth::auth,
+            )))
+        .route("/sse_token", get(sse_token)
             .route_layer(axum::middleware::from_fn_with_state(
                 state,
                 middleware::auth::auth,
-            ))
+            )))
 }
 
 async fn sse_token(
@@ -47,14 +53,14 @@ async fn sse_handler(
 ) -> GroovesResult<Sse<impl Stream<Item = Result<Event, Infallible>>>> {
     let sse_token = params
         .get("token")
-        .ok_or(GroovesError::InternalError("Missing token".to_string()))?;
+        .ok_or(GroovesError::InternalError(anyhow!("missing token")))?;
 
     let user = state
         .sse_tokens
         .lock()
         .unwrap()
         .remove(sse_token)
-        .ok_or(GroovesError::InternalError("invalid token".to_string()))?;
+        .ok_or(GroovesError::InternalError(anyhow!("invalid token")))?;
 
     let stream = async_stream::stream! {
         loop {
@@ -89,6 +95,6 @@ pub async fn command_handler(
     if manager.send_command(current_user, command).is_ok() {
         Ok("sent command")
     } else {
-        Err(GroovesError::InternalError("command failed".to_string()))
+        Err(GroovesError::InternalError(anyhow!("command failed")))
     }
 }

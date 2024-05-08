@@ -4,7 +4,7 @@ use axum::response::IntoResponse;
 use axum::routing::get;
 use axum::{Extension, Json, Router};
 use axum_macros::debug_handler;
-use grooves_model::{PlaylistElement, User};
+use grooves_model::{Playlist, PlaylistElement, User};
 use serde::Deserialize;
 use tracing::info;
 
@@ -32,14 +32,12 @@ async fn get_playlists(
     State(state): State<AppState>,
     Extension(current_user): Extension<User>,
 ) -> GroovesResult<impl IntoResponse> {
-    // let user_playlists = Playlist::find()
-    //     .filter(playlist::Column::OwnerId.eq(current_user.id))
-    //     .all(&state.db_pool)
-    //     .await?;
+    let playlists: Vec<Playlist> = sqlx::query_as("SELECT * FROM playlist WHERE owner_id = $1")
+        .bind(current_user.id)
+        .fetch_all(&state.db_pool)
+        .await?;
 
-    // Ok(Json(user_playlists))
-    todo!();
-    Ok("")
+    Ok(Json(playlists))
 }
 
 #[derive(Deserialize, Clone, Debug)]
@@ -54,15 +52,16 @@ async fn create_playlist(
     Extension(current_user): Extension<User>,
     Json(payload): Json<CreatePlaylist>,
 ) -> GroovesResult<impl IntoResponse> {
-    // let mut playlist = playlist::ActiveModel::new();
-    // playlist.name = Set(payload.name);
-    // playlist.elements = Set(payload.elements.into());
-    // playlist.owner_id = Set(current_user.id);
+    let playlist: Playlist = sqlx::query_as(
+        "INSERT INTO playlist (name, owner_id, elements) VALUES ($1, $2, $3) RETURNING *",
+    )
+    .bind(payload.name)
+    .bind(current_user.id)
+    .bind(sqlx::types::Json::from(payload.elements))
+    .fetch_one(&state.db_pool)
+    .await?;
 
-    // let result = playlist.insert(&state.db_pool).await?;
-    // Ok(Json(result))
-    todo!();
-    Ok("")
+    Ok(Json(playlist))
 }
 
 async fn get_playlist(
@@ -70,20 +69,15 @@ async fn get_playlist(
     Extension(current_user): Extension<User>,
     Path(playlist_id): Path<i32>,
 ) -> GroovesResult<impl IntoResponse> {
-    // if let Some(user_playlist) = Playlist::find_by_id(playlist_id)
-    //     .one(&state.db_pool)
-    //     .await?
-    // {
-    //     if user_playlist.owner_id != current_user.id {
-    //         Err(GroovesError::Forbidden)
-    //     } else {
-    //         Ok(Json(user_playlist))
-    //     }
-    // } else {
-    //     Err(GroovesError::NotFound)
-    // }
-    todo!();
-    Ok("")
+    let playlist: Playlist =
+        sqlx::query_as("SELECT * FROM playlist WHERE id = $1 AND owner_id = $2")
+            .bind(playlist_id)
+            .bind(current_user.id)
+            .fetch_optional(&state.db_pool)
+            .await?
+            .ok_or(GroovesError::NotFound)?;
+
+    Ok(Json(playlist))
 }
 
 async fn update_playlist(
@@ -92,25 +86,21 @@ async fn update_playlist(
     Path(playlist_id): Path<i32>,
     Json(payload): Json<CreatePlaylist>,
 ) -> GroovesResult<impl IntoResponse> {
-    // if let Some(user_playlist) = Playlist::find_by_id(playlist_id)
-    //     .one(&state.db_pool)
-    //     .await?
-    // {
-    //     if user_playlist.owner_id != current_user.id {
-    //         Err(GroovesError::Forbidden)
-    //     } else {
-    //         let mut active_playlist: playlist::ActiveModel = user_playlist.into();
-    //         active_playlist.name = Set(payload.name);
-    //         active_playlist.elements = Set(payload.elements.into());
-    //         let playlist = active_playlist.update(&state.db_pool).await?;
+    let playlist: Playlist = sqlx::query_as(
+        r#"UPDATE playlist
+            SET name = $1, elements = $2
+            WHERE id = $3 AND owner_id = $4
+            RETURNING *"#,
+    )
+    .bind(payload.name)
+    .bind(sqlx::types::Json::from(payload.elements))
+    .bind(playlist_id)
+    .bind(current_user.id)
+    .fetch_optional(&state.db_pool)
+    .await?
+    .ok_or(GroovesError::NotFound)?;
 
-    //         Ok(Json(playlist))
-    //     }
-    // } else {
-    //     Err(GroovesError::NotFound)
-    // }
-    todo!();
-    Ok("")
+    Ok(Json(playlist))
 }
 
 async fn delete_playlist(
@@ -118,21 +108,15 @@ async fn delete_playlist(
     Extension(current_user): Extension<User>,
     Path(playlist_id): Path<i32>,
 ) -> GroovesResult<impl IntoResponse> {
-    // if let Some(user_playlist) = Playlist::find_by_id(playlist_id)
-    //     .one(&state.db_pool)
-    //     .await?
-    // {
-    //     if user_playlist.owner_id != current_user.id {
-    //         Err(GroovesError::Forbidden)
-    //     } else {
-    //         Playlist::delete_by_id(playlist_id)
-    //             .exec(&state.db_pool)
-    //             .await?;
-    //         Ok(StatusCode::OK)
-    //     }
-    // } else {
-    //     Err(GroovesError::NotFound)
-    // }
-    todo!();
-    Ok("")
+    let res = sqlx::query("DELETE FROM playlist WHERE id = $1 AND owner_id = $2")
+        .bind(playlist_id)
+        .bind(current_user.id)
+        .execute(&state.db_pool)
+        .await?;
+
+    if res.rows_affected() == 0 {
+        Err(GroovesError::NotFound)
+    } else {
+        Ok(StatusCode::OK)
+    }
 }

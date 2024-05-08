@@ -1,11 +1,16 @@
 use std::collections::HashMap;
 use std::net::SocketAddr;
+use std::str::FromStr;
 use std::sync::{Arc, Mutex};
 
 use grooves_player::manager::PlayerManager;
+use sqlx::pool::PoolOptions;
+use sqlx::postgres::PgConnectOptions;
+use sqlx::{ConnectOptions, PgPool};
 use state::State;
 use tracing::info;
-use tracing_subscriber::prelude::*;
+use tracing_subscriber::layer::SubscriberExt;
+use tracing_subscriber::util::SubscriberInitExt;
 use tracing_subscriber::EnvFilter;
 
 mod error;
@@ -42,17 +47,20 @@ async fn main() {
 
     let database_url = std::env::var("DATABASE_URL").expect("DATABASE_URL must be set");
 
-    // let mut connection_options = ConnectOptions::new(database_url);
-
-    // connection_options
-    //     .max_connections(50)
-    //     .sqlx_logging_level(tracing::log::LevelFilter::Trace);
+    let connection_options = PgConnectOptions::from_str(&database_url)
+        .expect("valid database url")
+        .log_statements(tracing::log::LevelFilter::Debug);
 
     info!("webserver connecting to database");
-    // TODO: Create db pool
+
+    let pool: PgPool = PoolOptions::new()
+        .max_connections(16)
+        .connect_with(connection_options)
+        .await
+        .expect("connection to postgres");
 
     let state = Arc::new(State {
-        db_pool: (),
+        db_pool: pool,
         player_manager: PlayerManager::new(),
         sse_tokens: Mutex::new(HashMap::new()),
     });

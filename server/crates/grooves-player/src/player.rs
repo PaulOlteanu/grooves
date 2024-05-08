@@ -146,7 +146,7 @@ impl Player {
             return Ok(TickResult::Unchanged);
         };
 
-        let mut playback_state = self.playback_state.as_mut().unwrap();
+        let playback_state = self.playback_state.as_mut().unwrap();
         let current_element = playback_state.get_current_element();
 
         // If the playback stopped at the first song of the element, with 0 progress, we need to play the next element

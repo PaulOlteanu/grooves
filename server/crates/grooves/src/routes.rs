@@ -1,3 +1,4 @@
+use axum::http::header::AUTHORIZATION;
 use axum::http::{HeaderValue, Method};
 use axum::routing::get;
 use axum::Router;
@@ -22,6 +23,7 @@ pub fn router(state: AppState) -> Router<AppState> {
             Method::DELETE,
             Method::OPTIONS,
         ])
+        .allow_headers([AUTHORIZATION])
         .allow_headers(tower_http::cors::Any)
         .allow_origin(
             frontend_url

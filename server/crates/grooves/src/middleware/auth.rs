@@ -1,6 +1,7 @@
 use axum::extract::{Request, State};
 use axum::middleware::Next;
 use axum::response::Response;
+use grooves_model::User;
 use tracing::warn;
 
 use crate::error::{GroovesError, GroovesResult};
@@ -28,19 +29,12 @@ pub async fn auth(
 
     let auth_token = &auth_header[7..];
 
-    // TODO: Reimplement
-    // let result = Session::find()
-    //     .filter(session::Column::Token.eq(auth_token))
-    //     .find_also_related(User)
-    //     .one(&state.db_pool)
-    //     .await?;
+    let user: User = sqlx::query_as(r#"SELECT "user".* FROM session JOIN "user" ON session.user_id = "user".id WHERE session.token=$1"#)
+        .bind(auth_token)
+        .fetch_optional(&state.db_pool)
+        .await?
+        .ok_or(GroovesError::Unauthorized)?;
 
-    let result = todo!();
-
-    // if let Some((_, Some(existing_user))) = result {
-    //     req.extensions_mut().insert(existing_user);
-    //     return Ok(next.run(req).await);
-    // }
-
-    Err(GroovesError::Unauthorized)
+    req.extensions_mut().insert(user);
+    Ok(next.run(req).await)
 }

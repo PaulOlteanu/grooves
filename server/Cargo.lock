@@ -610,6 +610,7 @@ dependencies = [
  "rspotify",
  "serde",
  "serde_json",
+ "sqlx",
 ]
 
 [[package]]
@@ -633,6 +634,7 @@ dependencies = [
 name = "grooves-server"
 version = "0.1.0"
 dependencies = [
+ "anyhow",
  "async-stream",
  "axum",
  "axum-macros",

@@ -1,6 +1,7 @@
 use std::collections::HashMap;
 use std::sync::{Arc, Mutex};
 
+use anyhow::anyhow;
 use grooves_model::User;
 use rspotify::AuthCodeSpotify;
 
@@ -72,19 +73,19 @@ impl PlayerManager {
         FutureConnection::new(data.clone()).await
     }
 
-    pub fn send_command(&self, user: User, command: Command) -> Result<(), ()> {
+    pub fn send_command(&self, user: User, command: Command) -> anyhow::Result<()> {
         if let Some(connection) = self.get_player_connection(user.id) {
-            connection.sender.send(command).or(Err(()))
+            Ok(connection.sender.send(command)?)
         } else if let Command::Play { .. } = command {
             if let Some(token) = user.token {
                 let spotify_client = client_with_token(token);
                 let connection = self.new_player(user.id, spotify_client);
-                connection.sender.send(command).or(Err(()))
+                Ok(connection.sender.send(command)?)
             } else {
-                Err(())
+                Err(anyhow!("no token"))
             }
         } else {
-            Err(())
+            Err(anyhow!("no player and command wasn't to begin playback"))
         }
     }
 }

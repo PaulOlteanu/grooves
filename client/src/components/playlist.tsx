@@ -147,9 +147,10 @@ export default function Playlist({ playlist }: { playlist: PlaylistT }) {
     );
   });
 
+  // TODO: Just send the ID when starting playback
   const play_playlist = {
     type: "play",
-    playlist_id: playlist.id,
+    playlist: playlist,
   };
 
   const collapseAll = () => {

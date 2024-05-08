@@ -1,5 +1,6 @@
 use std::collections::HashMap;
 
+use anyhow::anyhow;
 use axum::extract::{Path, Query, State};
 use axum::response::IntoResponse;
 use axum::routing::get;
@@ -44,20 +45,20 @@ async fn search(
 ) -> GroovesResult<impl IntoResponse> {
     let query = params
         .get("q")
-        .ok_or(GroovesError::InternalError("Invalid query".to_string()))?;
+        .ok_or(GroovesError::InternalError(anyhow!("Invalid query")))?;
 
     let token = current_user.token.ok_or(GroovesError::Unauthorized)?;
 
-    let client = spotify::client_with_token(token);
+    let client = spotify::client_with_token(token.clone());
 
     debug!(query, "searching spotify for songs");
     let SearchResult::Tracks(songs) = client
         .search(query, SearchType::Track, None, None, None, None)
         .await?
     else {
-        return Err(GroovesError::InternalError(
-            "Spotify search failed".to_string(),
-        ));
+        return Err(GroovesError::InternalError(anyhow!(
+            "Spotify search failed"
+        )));
     };
 
     let songs: Vec<SearchResponse> = songs
@@ -77,9 +78,9 @@ async fn search(
         .search(query, SearchType::Album, None, None, None, None)
         .await?
     else {
-        return Err(GroovesError::InternalError(
-            "Spotify search failed".to_string(),
-        ));
+        return Err(GroovesError::InternalError(anyhow!(
+            "Spotify search failed"
+        )));
     };
 
     let albums: Vec<SearchResponse> = albums
@@ -92,15 +93,14 @@ async fn search(
         })
         .collect();
 
-    // TODO: Reimplement
-    // let mut active_user = user::ActiveModel::new();
-    // active_user.id = Set(current_user.id);
-    // let token = client.get_token();
-    // let token = token.lock().await.unwrap();
-    // let token = token.as_ref().map(|t| t.clone().into());
-    // active_user.token = Set(token);
-
-    // active_user.update(&state.db_pool).await?;
+    let new_token = client.get_token().lock().await.unwrap().clone();
+    if new_token != Some(token) {
+        sqlx::query(r#"UPDATE "user" SET token = $1 WHERE id = $2"#)
+            .bind(sqlx::types::Json(new_token))
+            .bind(current_user.id)
+            .execute(&state.db_pool)
+            .await?;
+    }
 
     Ok(Json(json!({"songs": songs, "albums": albums})))
 }
@@ -113,7 +113,7 @@ async fn album_to_element(
 ) -> GroovesResult<impl IntoResponse> {
     let token = current_user.token.ok_or(GroovesError::Unauthorized)?;
 
-    let client = spotify::client_with_token(token);
+    let client = spotify::client_with_token(token.clone());
 
     debug!(album_id, "getting album from spotify");
     let album = client.album(AlbumId::from_id(album_id)?, None).await?;
@@ -132,15 +132,14 @@ async fn album_to_element(
         })
         .collect();
 
-    // TODO: Reimplement
-    // let mut active_user = user::ActiveModel::new();
-    // active_user.id = Set(current_user.id);
-    // let token = client.get_token();
-    // let token = token.lock().await.unwrap();
-    // let token = token.as_ref().map(|t| t.clone().into());
-    // active_user.token = Set(token);
-
-    // active_user.update(&state.db_pool).await?;
+    let new_token = client.get_token().lock().await.unwrap().clone();
+    if new_token != Some(token) {
+        sqlx::query(r#"UPDATE "user" SET token = $1 WHERE id = $2"#)
+            .bind(sqlx::types::Json(new_token))
+            .bind(current_user.id)
+            .execute(&state.db_pool)
+            .await?;
+    }
 
     let response: PlaylistElement = PlaylistElement {
         name: album.name,

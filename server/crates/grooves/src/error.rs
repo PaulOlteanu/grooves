@@ -1,8 +1,5 @@
 use axum::http::StatusCode;
 use axum::response::IntoResponse;
-use rspotify::model::IdError;
-use rspotify::ClientError;
-use tokio::sync::mpsc::error::SendError;
 use tracing::debug;
 
 #[derive(Debug)]
@@ -11,38 +8,17 @@ pub enum GroovesError {
     Unauthorized,
     Forbidden,
     InvalidRequest,
-    InternalError(String),
+    InternalError(anyhow::Error),
 }
 
 pub type GroovesResult<T> = Result<T, GroovesError>;
 
-impl From<ClientError> for GroovesError {
-    fn from(value: ClientError) -> Self {
-        Self::InternalError(value.to_string())
-    }
-}
-
-impl From<IdError> for GroovesError {
-    fn from(value: IdError) -> Self {
-        Self::InternalError(value.to_string())
-    }
-}
-
-impl From<serde_json::Error> for GroovesError {
-    fn from(value: serde_json::Error) -> Self {
-        Self::InternalError(value.to_string())
-    }
-}
-
-impl From<axum::Error> for GroovesError {
-    fn from(value: axum::Error) -> Self {
-        Self::InternalError(value.to_string())
-    }
-}
-
-impl<T> From<SendError<T>> for GroovesError {
-    fn from(value: SendError<T>) -> Self {
-        Self::InternalError(value.to_string())
+impl<T> From<T> for GroovesError
+where
+    T: std::error::Error + Send + Sync + 'static,
+{
+    fn from(value: T) -> Self {
+        Self::InternalError(value.into())
     }
 }
 
@@ -55,7 +31,10 @@ impl IntoResponse for GroovesError {
             Self::Forbidden => (StatusCode::FORBIDDEN).into_response(),
             Self::InvalidRequest => (StatusCode::BAD_REQUEST).into_response(),
             Self::NotFound => (StatusCode::NOT_FOUND).into_response(),
-            Self::InternalError(msg) => (StatusCode::INTERNAL_SERVER_ERROR, msg).into_response(),
+            Self::InternalError(error) => {
+                debug!(error_source = error.source(), "error source");
+                (StatusCode::INTERNAL_SERVER_ERROR, error.to_string()).into_response()
+            }
         }
     }
 }

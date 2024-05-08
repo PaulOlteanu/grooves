@@ -1,11 +1,13 @@
 use rspotify::model::TrackId;
 use serde::{Deserialize, Serialize};
+use sqlx::FromRow;
 
-#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize, FromRow)]
 pub struct Playlist {
     pub id: i32,
     pub name: String,
     pub owner_id: i32,
+    #[sqlx(json)]
     pub elements: Vec<PlaylistElement>,
 }
 
