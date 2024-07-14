@@ -5,6 +5,7 @@ use futures::Future;
 use rspotify::AuthCodeSpotify;
 use tokio::sync::{mpsc, watch};
 use tokio::task;
+use tracing::info;
 
 use crate::player::commands::Command;
 use crate::player::{PlaybackInfo, Player};
@@ -48,14 +49,12 @@ pub struct PlayerConnection {
 impl PlayerConnection {
     /// This spawns a new tokio thread for a player
     pub fn new(spotify_client: AuthCodeSpotify) -> Self {
-        println!("Creating new player");
+        info!("creating new player");
         let (manager_sender, player_receiver) = mpsc::unbounded_channel();
         let (player_sender, manager_receiver) = watch::channel(None);
         let player = Player::new(spotify_client, player_sender, player_receiver);
 
-        task::spawn(async move {
-            let _ = player.run().await;
-        });
+        task::spawn(player.run());
 
         Self {
             sender: manager_sender,

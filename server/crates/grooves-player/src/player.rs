@@ -8,6 +8,7 @@ use rspotify::prelude::OAuthClient;
 use rspotify::{AuthCodeSpotify, ClientResult};
 use serde::{Deserialize, Serialize};
 use tokio::sync::{mpsc, watch};
+use tracing::{info, warn};
 
 use self::commands::Command;
 
@@ -114,22 +115,24 @@ impl Player {
             }
 
             if self.playback_state.is_some() {
-                let tick_result = self.tick().await;
+                match self.tick().await {
+                    Ok(result) => {
+                        failures = 0;
 
-                if let Ok(result) = tick_result {
-                    failures = 0;
-
-                    if let TickResult::Changed = result {
-                        self.send_state().await?
+                        if let TickResult::Changed = result {
+                            self.send_state().await?
+                        }
                     }
-                } else if let Err(e) = tick_result {
-                    println!("Tick errored: {:?}", e);
-                    failures += 1;
+
+                    Err(e) => {
+                        info!(error=?e, "tick errored");
+                        failures += 1;
+                    }
                 }
             };
 
             if failures >= 5 {
-                println!("Player exiting");
+                info!("player exiting");
                 return Err(PlayerError::TooManyErrors);
             }
 
@@ -149,7 +152,7 @@ impl Player {
         let playback_state = self.playback_state.as_mut().unwrap();
         let current_element = playback_state.get_current_element();
 
-        // If the playback stopped at the first song of the element, with 0 progress, we need to play the next element
+        // If the playback stopped at the first song of the element with 0 progress then we need to play the next element
         if !playback.is_playing {
             if let Some(prog) = playback.progress {
                 if let Some(PlayableItem::Track(song)) = &playback.item {
@@ -231,7 +234,6 @@ impl Player {
             Command::Resume => self.spotify_client.resume_playback(None, None).await?,
             Command::NextSong => self.spotify_client.next_track(None).await?,
             Command::PrevSong => self.spotify_client.previous_track(None).await?,
-
             Command::NextElement => {
                 playback_state.increment_current();
 
@@ -255,7 +257,7 @@ impl Player {
             }
 
             Command::AddToQueue | Command::RemoveFromQueue | Command::Exit => {
-                println!("Unimplemented command");
+                warn!("Unimplemented command");
             }
         }
 

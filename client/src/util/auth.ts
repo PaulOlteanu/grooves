@@ -25,7 +25,7 @@ export function getSpotifyRequestUrl() {
   });
 
   const requestUrl = new URL(
-    `https://accounts.spotify.com/authorize?${params.toString()}`
+    `https://accounts.spotify.com/authorize?${params.toString()}`,
   );
   return { requestUrl, state };
 }

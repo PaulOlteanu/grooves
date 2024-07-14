@@ -91,7 +91,7 @@ export default function Player() {
     const run = async () => {
       const token = await apiClient.getSseToken();
       const eventSource = new EventSource(
-        `${import.meta.env.VITE_API_URL}/player?token=${token}`
+        `${import.meta.env.VITE_API_URL}/player?token=${token}`,
       );
 
       eventSource.onmessage = (e) => setPlayerState(e.data);

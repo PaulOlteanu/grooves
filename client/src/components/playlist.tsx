@@ -50,42 +50,55 @@ function Element({
   toggleCollapse,
   onDelete,
   onUpdate,
+  onPlay,
 }: {
   element: PlaylistElement;
   onDelete: () => void;
   collapsed: boolean;
   toggleCollapse: () => void;
   onUpdate: (updatedElement: PlaylistElement) => void;
+  onPlay: () => void;
 }) {
-  const songs = element.songs.map((s, i) => {
-    const onDelete = () => {
-      const updatedElement = removeSong(element, i);
-      onUpdate(updatedElement);
-    };
+  let songs = null;
+  if (!collapsed) {
+    songs = element.songs.map((s, i) => {
+      const onDelete = () => {
+        const updatedElement = removeSong(element, i);
+        onUpdate(updatedElement);
+      };
 
-    return <Song song={s} key={s.name} onDelete={onDelete} />;
-  });
+      return <Song song={s} key={s.name} onDelete={onDelete} />;
+    });
+
+    songs = <div className="divide-y">{songs}</div>;
+  }
 
   return (
     <div className="rounded border px-2 mb-4">
       <div className="flex">
-        <button type="button" onClick={toggleCollapse}>
-          {collapsed ? (
-            <CaretRight size={18} className="items-center" />
-          ) : (
-            <CaretDown size={18} className="items-center" />
-          )}
+        <button
+          type="button"
+          className="justify-self-left"
+          onClick={toggleCollapse}
+        >
+          {collapsed ? <CaretRight size={24} /> : <CaretDown size={24} />}
         </button>
 
-        <span className="text-center text-xl font-bold inline-block w-full whitespace-nowrap overflow-hidden text-ellipsis">
-          {element.name}
-        </span>
+        <div className="flex-grow text-center">
+          <span className="text-xl font-bold whitespace-nowrap overflow-hidden text-ellipsis align-middle">
+            {element.name}
+          </span>
+          <button onClick={onPlay} className="align-middle">
+            <Play size={24} />
+          </button>
+        </div>
 
-        <button className="hidden md:block" type="button" onClick={onDelete}>
-          <X size={18} className="items-center" />
+        <button className="justify-self-right" type="button" onClick={onDelete}>
+          <X size={24} />
         </button>
       </div>
-      {!collapsed ? <div className="divide-y">{songs}</div> : null}
+
+      {songs}
     </div>
   );
 }
@@ -100,15 +113,16 @@ export default function Playlist({ playlist }: { playlist: PlaylistT }) {
   const [collapsed, setCollapsed] = useState<Collapsed>(() => {
     return playlist.elements.reduce(
       (acc, element) => ({ ...acc, [element.name]: false }),
-      {}
+      {},
     );
   });
 
+  // TODO: Probably don't need useeffect
   useEffect(() => {
     setCollapsed({
       ...playlist.elements.reduce(
         (acc, element) => ({ ...acc, [element.name]: false }),
-        {}
+        {},
       ),
       ...collapsed,
     });
@@ -129,6 +143,16 @@ export default function Playlist({ playlist }: { playlist: PlaylistT }) {
       updatePlaylistMutation.mutate(updatedPlaylist);
     };
 
+    const onPlay = () => {
+      const playElement = {
+        type: "play",
+        playlist_id: playlist.id,
+        element_index: i,
+      };
+
+      void apiClient.sendPlayerCommand(playElement);
+    };
+
     const toggleCollapse = () => {
       const next = { ...collapsed, [e.name]: !collapsed[e.name] };
 
@@ -143,22 +167,22 @@ export default function Playlist({ playlist }: { playlist: PlaylistT }) {
         toggleCollapse={toggleCollapse}
         onDelete={onDelete}
         onUpdate={onUpdate}
+        onPlay={onPlay}
       />
     );
   });
 
-  // TODO: Just send the ID when starting playback
-  const play_playlist = {
+  const playPlaylist = {
     type: "play",
-    playlist: playlist,
+    playlist_id: playlist.id,
   };
 
   const collapseAll = () => {
     setCollapsed(
       playlist.elements.reduce(
         (acc, element) => ({ ...acc, [element.name]: true }),
-        {}
-      )
+        {},
+      ),
     );
   };
 
@@ -166,8 +190,8 @@ export default function Playlist({ playlist }: { playlist: PlaylistT }) {
     setCollapsed(
       playlist.elements.reduce(
         (acc, element) => ({ ...acc, [element.name]: false }),
-        {}
-      )
+        {},
+      ),
     );
   };
 
@@ -178,29 +202,34 @@ export default function Playlist({ playlist }: { playlist: PlaylistT }) {
           <span className="text-2xl font-bold">{playlist.name}</span>
 
           <button
-            onClick={() => void apiClient.sendPlayerCommand(play_playlist)}
+            onClick={() => void apiClient.sendPlayerCommand(playPlaylist)}
             className="float-right pr-2 inline-block"
           >
             <Play size={32} />
           </button>
         </div>
+
         <div className="flex underline">
           <button onClick={expandAll} className="flex-grow">
             <ArrowsOutLineVertical
               size={18}
               className="items-center inline-block mr-2"
             />
+
             <span>Expand All</span>
           </button>
+
           <button onClick={collapseAll} className="flex-grow">
             <ArrowsInLineVertical
               size={18}
               className="items-center inline-block mr-2"
             />
+
             <span>Collapse All</span>
           </button>
         </div>
       </div>
+
       <div className="w-full p-2">{elements}</div>
     </div>
   );

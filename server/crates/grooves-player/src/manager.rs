@@ -54,6 +54,8 @@ impl PlayerManager {
         }
     }
 
+    /// This function could sleep for a long time. It will wait until a new player
+    /// is created if one does not exist
     pub async fn await_player_connection(&self, user_id: i32) -> PlayerConnection {
         if let Some(connection) = self.get_player_connection(user_id) {
             return connection;
@@ -70,7 +72,7 @@ impl PlayerManager {
             values.push(data.clone());
         }
 
-        FutureConnection::new(data.clone()).await
+        FutureConnection::new(data).await
     }
 
     pub fn send_command(&self, user: User, command: Command) -> anyhow::Result<()> {
