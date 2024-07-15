@@ -19,7 +19,7 @@ export default function usePlaylist(id: number) {
         return await apiClient.getPlaylist(id);
       }
     },
-    { retry: false },
+    { retry: false, refetchOnWindowFocus: false },
   );
 
   const updatePlaylistMutation = useMutation(
@@ -36,6 +36,7 @@ export default function usePlaylist(id: number) {
           queryKey: ["playlist", playlist.id],
         });
       },
+
     },
   );
 
