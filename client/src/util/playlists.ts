@@ -2,7 +2,7 @@ import { Playlist, PlaylistElement, Song } from "../types";
 
 export function addElement(
   playlist: Playlist,
-  element: PlaylistElement
+  element: PlaylistElement,
 ): Playlist {
   return { ...playlist, elements: [...playlist.elements, element] };
 }
@@ -10,19 +10,19 @@ export function addElement(
 export function updateElement(
   playlist: Playlist,
   elementIndex: number,
-  updatedElement: PlaylistElement
+  updatedElement: PlaylistElement,
 ) {
   return {
     ...playlist,
     elements: playlist.elements.map((e, i) =>
-      i === elementIndex ? updatedElement : e
+      i === elementIndex ? updatedElement : e,
     ),
   };
 }
 
 export function removeElement(
   playlist: Playlist,
-  elementIndex: number
+  elementIndex: number,
 ): Playlist {
   return {
     ...playlist,
@@ -36,7 +36,7 @@ export function addSong(element: PlaylistElement, song: Song): PlaylistElement {
 
 export function removeSong(
   element: PlaylistElement,
-  songIndex: number
+  songIndex: number,
 ): PlaylistElement {
   return {
     ...element,

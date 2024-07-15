@@ -11,7 +11,7 @@ processes = []
   build-target = "runner"
 
 [env]
-  RUST_LOG="error"
+  RUST_LOG="INFO"
   FRONTEND_URL="https://grooves.paulolteanu.ca"
   GROOVES_PORT="4000"
   RSPOTIFY_CLIENT_ID="1ef695e7fecc4086a26b8cd329e477dc"

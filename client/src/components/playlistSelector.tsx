@@ -12,31 +12,36 @@ function Playlist({ playlist }: { playlist: PlaylistT }) {
 
   // TODO: If active and delete is pressed, redirect to /playlists
   return (
-    <div>
-      <NavLink
-        to={`/playlists/${playlist.id}`}
-        className={({ isActive }) =>
-          "group hover:text-white" +
-          (isActive ? " text-white outline rounded" : "")
-        }
-      >
-        <div className="flex py-2">
-          <div className="flex inline-block w-full items-center min-w-0">
-            <span className="whitespace-nowrap overflow-hidden text-ellipsis">
-              <span>{playlist.name}</span>
-            </span>
-          </div>
-          <button
-            className="z-100"
-            type="button"
-            onClick={(e) => {
-              e.preventDefault();
-              deletePlaylistMutation.mutate(playlist);
-            }}
-          >
-            <X size={18} />
-          </button>
-        </div>
+    <div className="px-2">
+      <NavLink to={`/playlists/${playlist.id}`} className="group">
+        {({ isActive }) => {
+          let bg = "";
+          if (isActive) {
+            bg = "bg-neutral-400/20 hover:bg-neutral-200/20";
+          } else {
+            bg = "hover:bg-neutral-600/20";
+          }
+
+          return (
+            <div className={"flex rounded py-2 px-2 " + bg}>
+              <div className="flex inline-block w-full items-center min-w-0">
+                <span className="whitespace-nowrap overflow-hidden text-ellipsis">
+                  <span>{playlist.name}</span>
+                </span>
+              </div>
+              <button
+                className="z-100"
+                type="button"
+                onClick={(e) => {
+                  e.preventDefault();
+                  deletePlaylistMutation.mutate(playlist);
+                }}
+              >
+                <X size={18} />
+              </button>
+            </div>
+          );
+        }}
       </NavLink>
     </div>
   );
@@ -57,7 +62,7 @@ export default function PlaylistSelector({
   }
 
   const filtered = _.pickBy(playlists, (playlist) =>
-    playlist.name.toLowerCase().includes(searchFilter.toLowerCase())
+    playlist.name.toLowerCase().includes(searchFilter.toLowerCase()),
   );
 
   const sorted = _.sortBy(filtered, (p) => p.name);
@@ -84,7 +89,7 @@ export default function PlaylistSelector({
   return (
     <div className="h-full max-h-full w-full overflow-auto">
       <input
-        className="bg-neutral-400/10 text-white w-full text-center rounded-t-md"
+        className="bg-neutral-400/10 text-white w-full text-center rounded-t-md mb-2"
         type="text"
         placeholder="Search"
         value={searchFilter}
@@ -92,7 +97,7 @@ export default function PlaylistSelector({
           setSearchFilter(e.target.value);
         }}
       />
-      <div className="divide-y px-2">{rendered}</div>
+      <div>{rendered}</div>
       <div className="flex px-2">
         <input
           className="bg-neutral-400/10 flex inline-block w-full items-center text-white text-center"

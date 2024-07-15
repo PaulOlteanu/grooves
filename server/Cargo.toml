@@ -1,37 +1,46 @@
-[package]
-name = "grooves-server"
-version = "0.1.0"
-edition = "2021"
+[workspace]
+members = ["crates/*"]
+resolver = "2"
 
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+[workspace.dependencies]
+grooves-model = { path = "./crates/grooves-model", version = "0.0.0" }
+grooves-player = { path = "./crates/grooves-player", version = "0.0.0" }
 
-[dependencies]
-async-stream = "0.3"
-axum = { version = "0.6", features = ["default", "ws"] }
-axum-macros = "0.3.4"
-dotenvy = "0.15"
-futures = "0.3"
-futures-util = "0.3"
-grooves-entity = { path = "grooves-entity" }
-grooves-migration = { path = "grooves-migration" }
-grooves-player = { path = "grooves-player" }
-itertools = "0.10"
-rand = "0.8"
-rspotify = { git = "https://github.com/ramsayleung/rspotify.git", rev = "b92316e" }
-sea-orm = { version = "0.11", features = [
-    "sqlx-postgres",
-    "runtime-tokio-rustls",
-    "macros",
-    "with-json",
-    "with-chrono",
+anyhow = "1.0"
+rspotify = { version = "0.13", default-features = false, features = [
+  "client-reqwest",
+  "reqwest-rustls-tls",
 ] }
 serde = { version = "1.0", features = ["derive"] }
-serde_json = "1.0.68"
-tokio = { version = "1.0", features = ["full"] }
-tokio-stream = "0.1"
-tower-http = { version = "0.3.0", features = ["trace", "cors"] }
+serde_json = "1.0"
+sqlx = { version = "0.7", default-features = false, features = [
+  "runtime-tokio",
+  "tls-rustls",
+  "postgres",
+  "macros",
+  "uuid",
+  "chrono",
+  "json",
+] }
+tokio = { version = "1.37", features = ["full"] }
 tracing = "0.1"
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 
-[workspace]
-members = ["grooves-entity", "grooves-migration", "grooves-player"]
+[workspace.lints.rust]
+rust_2018_idioms = "warn"
+unused_lifetimes = "warn"
+semicolon_in_expressions_from_macros = "warn"
+
+[workspace.lints.clippy]
+complexity = { level = "warn", priority = -1 }
+correctness = { level = "deny", priority = -1 }
+perf = { level = "deny", priority = -1 }
+restriction = { level = "allow", priority = -1 }
+style = { level = "warn", priority = -1 }
+suspicious = { level = "warn", priority = -1 }
+
+rc_buffer = "warn"
+str_to_string = "warn"
+
+[profile.dev.package.sqlx-macros]
+opt-level = 3

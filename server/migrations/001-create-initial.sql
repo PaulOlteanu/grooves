@@ -1,0 +1,18 @@
+CREATE TABLE IF NOT EXISTS "user"(
+    id SERIAL PRIMARY KEY NOT NULL,
+    spotify_id TEXT NOT NULL,
+    token JSONB
+);
+
+CREATE TABLE IF NOT EXISTS playlist(
+    id SERIAL PRIMARY KEY NOT NULL,
+    name TEXT NOT NULL,
+    owner_id INT NOT NULL REFERENCES "user"(id),
+    elements JSONB NOT NULL DEFAULT '[]'
+);
+
+CREATE TABLE IF NOT EXISTS "session"(
+    id SERIAL PRIMARY KEY NOT NULL,
+    user_id INT NOT NULL REFERENCES "user"(id),
+    token TEXT NOT NULL
+);

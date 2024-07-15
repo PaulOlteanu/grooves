@@ -1,4 +1,4 @@
-FROM rust:latest AS chef
+FROM rust:1.79-bookworm AS chef
 RUN cargo install cargo-chef
 WORKDIR /app
 
@@ -14,7 +14,7 @@ RUN cargo chef cook --release --recipe-path recipe.json
 COPY . .
 RUN cargo build --release
 
-FROM rust:latest AS runner
+FROM debian:bookworm-slim as runner
 WORKDIR /app
 COPY --from=builder /app/target/release/grooves-server /bin
 ENTRYPOINT ["/bin/grooves-server"]

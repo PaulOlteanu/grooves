@@ -23,10 +23,8 @@ function SearchResult({
         src={imageUrl || undefined}
       />
 
-      <div className="flex inline-block w-full items-center min-w-0 pl-2">
-        <span className="whitespace-nowrap overflow-hidden text-ellipsis">
-          <span>{name}</span>
-        </span>
+      <div className="flex w-full items-center min-w-0 pl-2 whitespace-nowrap overflow-hidden text-ellipsis">
+        {name}
       </div>
 
       <button type="button" onClick={onAdd}>
@@ -39,7 +37,7 @@ function SearchResult({
 export default function Search({
   addAlbum,
 }: {
-  addAlbum?: (newElement: PlaylistElement) => void;
+  addAlbum: (newElement: PlaylistElement) => void;
 }) {
   const [searchText, setSearchText] = useState("");
   const [results, setResults] = useState<SearchResults | null>(null);
@@ -59,7 +57,7 @@ export default function Search({
         // TODO: Show an error
         console.error(e);
       }
-    }, 500)
+    }, 500),
   ).current;
 
   if (!apiClient) {
@@ -78,11 +76,9 @@ export default function Search({
     albums = results.albums.map((a) => {
       const onAdd = () => {
         const run = async () => {
-          if (addAlbum) {
-            // TODO: don't add if there's an element with the same name already
-            const element = await apiClient.albumToElement(a.spotify_id);
-            addAlbum(element);
-          }
+          // TODO: don't add if there's an element with the same name already
+          const element = await apiClient.albumToElement(a.spotify_id);
+          addAlbum(element);
         };
 
         void run();
@@ -104,11 +100,11 @@ export default function Search({
 
   return (
     <div className="w-full h-full overflow-auto">
-      <div className="text-center mb-4">
+      <div className="text-center">
         <p>Spotify Search</p>
 
         <input
-          className="bg-neutral-800 text-center"
+          className="bg-neutral-800 text-center min-w-80"
           type="text"
           value={searchText}
           onChange={handleSearch}
@@ -119,8 +115,8 @@ export default function Search({
         <div className="w-full h-full p-2">
           {albums && (
             <>
-              <h4 className="text-center text-xl font-bold w-full">Albums</h4>
-              <div className="p-4 divide-y">{albums}</div>
+              {/*<h4 className="text-center text-xl font-bold w-full">Albums</h4>*/}
+              <div className="divide-y">{albums}</div>
             </>
           )}
           {songs && (

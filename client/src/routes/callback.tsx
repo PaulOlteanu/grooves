@@ -40,7 +40,7 @@ export default function LoginCallback() {
               "Content-Type": "application/json",
             },
             body: JSON.stringify({ code }),
-          }
+          },
         );
 
         if (apiResponse.status !== 200) {

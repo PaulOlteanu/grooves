@@ -58,7 +58,7 @@ export default class ApiClient {
 
   async getPlaylist(playlistId: number) {
     const { data } = await this.axiosClient.get<Playlist>(
-      `/playlists/${playlistId}`
+      `/playlists/${playlistId}`,
     );
     return data;
   }
@@ -66,7 +66,7 @@ export default class ApiClient {
   async updatePlaylist(playlist: Playlist) {
     const { data } = await this.axiosClient.put<Playlist>(
       `/playlists/${playlist.id}`,
-      playlist
+      playlist,
     );
 
     return data;
@@ -78,7 +78,7 @@ export default class ApiClient {
 
   async search(query: string) {
     const { data } = await this.axiosClient.get<SearchResults>(
-      `/spotify/search?q=${query}`
+      `/spotify/search?q=${query}`,
     );
 
     return data;
@@ -86,7 +86,7 @@ export default class ApiClient {
 
   async albumToElement(albumId: string) {
     const { data } = await this.axiosClient.get<PlaylistElement>(
-      `/spotify/album_to_element/${albumId}`
+      `/spotify/album_to_element/${albumId}`,
     );
 
     return data;
@@ -96,7 +96,7 @@ export default class ApiClient {
     await this.axiosClient.post("/player", command);
   }
 
-  async getSseToken () {
+  async getSseToken() {
     const { data } = await this.axiosClient.get<string>("/player/sse_token");
     return data;
   }

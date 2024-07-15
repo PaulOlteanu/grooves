@@ -18,7 +18,7 @@ export default function usePlaylists() {
         return await apiClient.getPlaylists();
       }
     },
-    { retry: false }
+    { retry: false },
   );
 
   const createPlaylistMutation = useMutation(
@@ -33,7 +33,7 @@ export default function usePlaylists() {
       onSuccess: () => {
         void queryClient.invalidateQueries({ queryKey: "playlists" });
       },
-    }
+    },
   );
 
   return {
