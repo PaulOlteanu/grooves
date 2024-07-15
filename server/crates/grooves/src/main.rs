@@ -28,7 +28,7 @@ async fn main() {
         Ok("DEBUG") => {
             "grooves_server=debug,grooves_player=debug,tower_http=debug,axum::rejection=trace"
         }
-        Ok("INFO") => "info",
+        Ok("INFO") => "info,tower_http=warn,axum::rejection=info,rspotify_http=warn,rspotify=warn",
         Ok("WARN") => "warn",
         Ok("ERROR") => "error",
         _ => "grooves_server=debug,grooves_player=debug,tower_http=debug,axum::rejection=trace",

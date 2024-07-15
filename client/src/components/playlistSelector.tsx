@@ -12,31 +12,36 @@ function Playlist({ playlist }: { playlist: PlaylistT }) {
 
   // TODO: If active and delete is pressed, redirect to /playlists
   return (
-    <div>
+    <div className="px-2">
       <NavLink to={`/playlists/${playlist.id}`} className="group">
-        {({ isActive }) => (
-          <div
-            className={
-              "flex py-2 px-2 " + (isActive ? "rounded bg-neutral-400/20" : "")
-            }
-          >
-            <div className="flex inline-block w-full items-center min-w-0">
-              <span className="whitespace-nowrap overflow-hidden text-ellipsis">
-                <span>{playlist.name}</span>
-              </span>
+        {({ isActive }) => {
+          let bg = "";
+          if (isActive) {
+            bg = "bg-neutral-400/20 hover:bg-neutral-200/20";
+          } else {
+            bg = "hover:bg-neutral-600/20";
+          }
+
+          return (
+            <div className={"flex rounded py-2 px-2 " + bg}>
+              <div className="flex inline-block w-full items-center min-w-0">
+                <span className="whitespace-nowrap overflow-hidden text-ellipsis">
+                  <span>{playlist.name}</span>
+                </span>
+              </div>
+              <button
+                className="z-100"
+                type="button"
+                onClick={(e) => {
+                  e.preventDefault();
+                  deletePlaylistMutation.mutate(playlist);
+                }}
+              >
+                <X size={18} />
+              </button>
             </div>
-            <button
-              className="z-100"
-              type="button"
-              onClick={(e) => {
-                e.preventDefault();
-                deletePlaylistMutation.mutate(playlist);
-              }}
-            >
-              <X size={18} />
-            </button>
-          </div>
-        )}
+          );
+        }}
       </NavLink>
     </div>
   );
