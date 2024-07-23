@@ -23,8 +23,10 @@ function SearchResult({
         src={imageUrl || undefined}
       />
 
-      <div className="flex w-full items-center min-w-0 pl-2 whitespace-nowrap overflow-hidden text-ellipsis">
-        {name}
+      <div className="flex w-full items-center min-w-0 pl-2">
+        <p className="whitespace-nowrap overflow-hidden text-ellipsis">
+          {name}
+        </p>
       </div>
 
       <button type="button" onClick={onAdd}>

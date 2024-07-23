@@ -1,6 +1,5 @@
 import {
   X,
-  Trash,
   Play,
   CaretRight,
   CaretDown,
@@ -15,7 +14,6 @@ import type {
   Playlist as PlaylistT,
 } from "../types";
 import { removeElement, removeSong, updateElement } from "../util/playlists";
-import Card from "./card";
 import { useEffect, useState } from "react";
 
 function Song({
@@ -25,21 +23,18 @@ function Song({
   song: SongT;
   onDelete: (event: React.MouseEvent<HTMLButtonElement>) => void;
 }) {
+  // TODO: Some kind of padding on these
   return (
-    <div className="flex">
-      <div className="flex flex-grow min-w-0">
-        <Card
-          content={song.name}
-          subContent={song.artists}
-          imageUrl={song.image_url}
-        />
-      </div>
+    <div className="group hover:bg-neutral-600/20 rounded flex">
+      <li className="flex-grow truncate py-2">{song.name}</li>
 
-      <div className="hidden md:flex align-center">
-        <button type="button" className="align-center" onClick={onDelete}>
-          <Trash size={18} className="items-center" />
-        </button>
-      </div>
+      <button
+        type="button"
+        className="hidden group-hover:inline-block align-center float-right"
+        onClick={onDelete}
+      >
+        <X size={18} className="items-center" />
+      </button>
     </div>
   );
 }
@@ -59,46 +54,54 @@ function Element({
   onUpdate: (updatedElement: PlaylistElement) => void;
   onPlay: () => void;
 }) {
-  let songs = null;
-  if (!collapsed) {
-    songs = element.songs.map((s, i) => {
-      const onDelete = () => {
-        const updatedElement = removeSong(element, i);
-        onUpdate(updatedElement);
-      };
+  const songs = element.songs.map((s, i) => {
+    const onDelete = () => {
+      const updatedElement = removeSong(element, i);
+      onUpdate(updatedElement);
+    };
 
-      return <Song song={s} key={s.name} onDelete={onDelete} />;
-    });
+    return <Song song={s} key={s.name} onDelete={onDelete} />;
+  });
 
-    songs = <div className="divide-y">{songs}</div>;
-  }
-
+  // TODO: a placeholder image
+  // TODO: album cover change into play button on hover
+  const padding = collapsed ? "pb-4" : "pb-2";
   return (
-    <div className="rounded border px-2 mb-4">
-      <div className="flex">
-        <button
-          type="button"
-          className="justify-self-left"
-          onClick={toggleCollapse}
-        >
-          {collapsed ? <CaretRight size={24} /> : <CaretDown size={24} />}
-        </button>
+    <div className={"first:pt-0 last:pb-0 pt-4 " + padding}>
+      <div className={"flex group"}>
+        <img
+          className="h-20 w-20"
+          height={20}
+          width={20}
+          src={element.image_url || ""}
+          alt=""
+        />
 
-        <div className="flex-grow text-center">
-          <span className="text-xl font-bold whitespace-nowrap overflow-hidden text-ellipsis align-middle">
+        <div className="flex-grow px-2">
+          <h2 className="text-2xl line-clamp-1 whitespace-pre-line">
             {element.name}
-          </span>
-          <button onClick={onPlay} className="align-middle">
-            <Play size={24} />
-          </button>
+          </h2>
+          <p className="line-clamp-1 whitespace-pre-line">{element.artists}</p>
         </div>
 
-        <button className="justify-self-right" type="button" onClick={onDelete}>
-          <X size={24} />
-        </button>
+        <div className="flex-shrink-0 space-x-1">
+          <button type="button" onClick={toggleCollapse}>
+            {collapsed ? <CaretRight size={24} /> : <CaretDown size={24} />}
+          </button>
+
+          <button type="button" onClick={onPlay}>
+            <Play size={24} />
+          </button>
+
+          <button type="button" onClick={onDelete}>
+            <X size={24} />
+          </button>
+        </div>
       </div>
 
-      {songs}
+      {collapsed ? null : (
+        <ol className="list-decimal list-inside pt-2">{songs}</ol>
+      )}
     </div>
   );
 }
@@ -198,21 +201,21 @@ export default function Playlist({ playlist }: { playlist: PlaylistT }) {
   return (
     <div className="h-full max-h-full w-full overflow-auto">
       <div className="items-center">
-        <div className="text-center py-1">
+        <div className="text-center py-1 px-4">
           <span className="text-2xl font-bold">{playlist.name}</span>
 
           <button
             onClick={() => void apiClient.sendPlayerCommand(playPlaylist)}
-            className="float-right pr-2 inline-block"
+            className="float-right inline-block"
           >
             <Play size={32} />
           </button>
         </div>
 
-        <div className="flex underline">
+        <div className="flex underline pb-2">
           <button onClick={expandAll} className="flex-grow">
             <ArrowsOutLineVertical
-              size={18}
+              size={20}
               className="items-center inline-block mr-2"
             />
 
@@ -221,7 +224,7 @@ export default function Playlist({ playlist }: { playlist: PlaylistT }) {
 
           <button onClick={collapseAll} className="flex-grow">
             <ArrowsInLineVertical
-              size={18}
+              size={20}
               className="items-center inline-block mr-2"
             />
 
@@ -230,7 +233,11 @@ export default function Playlist({ playlist }: { playlist: PlaylistT }) {
         </div>
       </div>
 
-      <div className="w-full p-2">{elements}</div>
+      <hr className="mx-4" />
+
+      <div className="w-full p-4 divide-y">
+        {elements}
+      </div>
     </div>
   );
 }

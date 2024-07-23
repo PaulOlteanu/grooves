@@ -67,7 +67,7 @@ export default function PlaylistSelector({
 
   const sorted = _.sortBy(filtered, (p) => p.name);
 
-  const rendered = sorted.map((p) => {
+  const playlistlist = sorted.map((p) => {
     return <Playlist key={p.id} playlist={p} />;
   });
 
@@ -88,17 +88,21 @@ export default function PlaylistSelector({
   // TODO: Fix the overflow on this
   return (
     <div className="h-full max-h-full w-full overflow-auto">
-      <input
-        className="bg-neutral-400/10 text-white w-full text-center rounded-t-md mb-2"
-        type="text"
-        placeholder="Search"
-        value={searchFilter}
-        onChange={(e) => {
-          setSearchFilter(e.target.value);
-        }}
-      />
-      <div>{rendered}</div>
-      <div className="flex px-2">
+      <div className="flex px-2 pt-2">
+        <input
+          className="bg-neutral-400/10 text-white w-full text-center"
+          type="text"
+          placeholder="Search"
+          value={searchFilter}
+          onChange={(e) => {
+            setSearchFilter(e.target.value);
+          }}
+        />
+      </div>
+
+      <div className="py-2">{playlistlist}</div>
+
+      <div className="flex px-2 pb-2">
         <input
           className="bg-neutral-400/10 flex inline-block w-full items-center text-white text-center"
           type="text"
