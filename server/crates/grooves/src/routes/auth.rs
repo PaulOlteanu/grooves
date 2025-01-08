@@ -55,7 +55,7 @@ async fn login(
     };
 
     let user: User = if let Some(user) = existing_user {
-        sqlx::query_as(r#"UPDATE "user" SET token=$1 WHERE id=2 RETURNING *"#)
+        sqlx::query_as(r#"UPDATE "user" SET token=$1 WHERE id=$2 RETURNING *"#)
             .bind(sqlx::types::Json::from(token))
             .bind(user.id)
             .fetch_one(&state.db_pool)
